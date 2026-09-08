@@ -13,7 +13,7 @@ import { OnboardingCarousel } from "./components/OnboardingCarousel";
 import { GovernancePanel } from "./components/GovernancePanel";
 import { SecretsPanel } from "./components/SecretsPanel";
 
-// Orbit — local agent OS, styled after x.ai/bot: a Messages-style app where each
+// BalamOS — local agent OS, styled after x.ai/bot: a Messages-style app where each
 // workspace is an agent you chat with, plus a live OS pane you can reveal. The
 // presentation is now backed entirely by the real workspace controller.
 
@@ -36,7 +36,7 @@ export function OrbitAppView({
 }) {
   const [onboarded, setOnboarded] = useState(() => {
     try {
-      return localStorage.getItem("orbit.onboarded") === "true";
+      return localStorage.getItem("balamos.onboarded") === "true";
     } catch {
       return false;
     }
@@ -99,7 +99,7 @@ export function OrbitAppView({
                 <span className="core" />
                 <span className="sat" />
               </span>
-              Orbit
+              BalamOS
             </span>
             <button
               className="sb-plus"
@@ -258,7 +258,7 @@ export function OrbitAppView({
         <OnboardingCarousel
           onDone={() => {
             try {
-              localStorage.setItem("orbit.onboarded", "true");
+              localStorage.setItem("balamos.onboarded", "true");
             } catch {
               // Continue without persistence if storage is unavailable.
             }
@@ -273,7 +273,7 @@ export function OrbitAppView({
         <div className="docker-overlay" role="status" aria-label="Connecting">
           <div className="docker-card">
             <span className="spinner spinner-lg" aria-hidden="true" />
-            <p>Connecting to Orbit…</p>
+            <p>Connecting to BalamOS…</p>
           </div>
         </div>
       )}

@@ -9,7 +9,7 @@ type Slide = {
 const slides: Slide[] = [
   {
     title: "Each bot has its own computer",
-    body: "Every Orbit bot runs in its own isolated Ubuntu workspace and drives it like you would.",
+    body: "Every BalamOS bot runs in its own isolated Ubuntu workspace and drives it like you would.",
     motif: "computer",
   },
   {
@@ -95,11 +95,11 @@ export function OnboardingCarousel({ onDone }: { onDone: () => void }) {
       className="onboarding-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to Orbit"
+      aria-label="Welcome to BalamOS"
     >
       <div className="onboarding-card">
         <Illustration motif={slide.motif} />
-        <p className="onboarding-kicker">ORBIT / 0{current + 1}</p>
+        <p className="onboarding-kicker">BALAMOS / 0{current + 1}</p>
         <h1>{slide.title}</h1>
         <p className="onboarding-body">{slide.body}</p>
         <div

@@ -66,7 +66,7 @@ export const message = (error: unknown) => {
   // Vite preview) throws a cryptic "reading 'invoke'" TypeError because the
   // Tauri IPC bridge is absent. Turn it into an actionable message.
   if (/reading 'invoke'|__TAURI_INTERNALS__/.test(text)) {
-    return "Orbit's backend runs in the native desktop app. A browser preview cannot reach the local daemon — launch the Orbit desktop app.";
+    return "BalamOS's backend runs in the native desktop app. A browser preview cannot reach the local daemon — launch the BalamOS desktop app.";
   }
   return text;
 };

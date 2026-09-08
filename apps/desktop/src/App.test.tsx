@@ -62,7 +62,7 @@ const twoWorkspaces = () => [
 
 describe("OrbitAppView", () => {
   beforeEach(() => {
-    localStorage.setItem("orbit.onboarded", "true");
+    localStorage.setItem("balamos.onboarded", "true");
   });
 
   it("renders real workspace names and status labels, never mock data", async () => {
@@ -180,7 +180,7 @@ describe("OrbitAppView", () => {
       />,
     );
 
-    expect(screen.getByText("Connecting to Orbit…")).toBeVisible();
+    expect(screen.getByText("Connecting to BalamOS…")).toBeVisible();
     expect(screen.getByLabelText("Connecting")).toBeVisible();
   });
 
@@ -270,11 +270,11 @@ describe("OrbitAppView", () => {
 
   it("shows onboarding on first run and persists dismissal", async () => {
     const user = userEvent.setup();
-    localStorage.removeItem("orbit.onboarded");
+    localStorage.removeItem("balamos.onboarded");
     const { rerender } = render(<OrbitAppView controller={controllerStub()} />);
 
     expect(
-      screen.getByRole("dialog", { name: "Welcome to Orbit" }),
+      screen.getByRole("dialog", { name: "Welcome to BalamOS" }),
     ).toBeVisible();
     for (let slide = 0; slide < 4; slide += 1) {
       await user.click(screen.getByRole("button", { name: "Next" }));
@@ -283,13 +283,13 @@ describe("OrbitAppView", () => {
       screen.getByRole("button", { name: "Create your first bot" }),
     );
     expect(
-      screen.queryByRole("dialog", { name: "Welcome to Orbit" }),
+      screen.queryByRole("dialog", { name: "Welcome to BalamOS" }),
     ).not.toBeInTheDocument();
-    expect(localStorage.getItem("orbit.onboarded")).toBe("true");
+    expect(localStorage.getItem("balamos.onboarded")).toBe("true");
 
     rerender(<OrbitAppView controller={controllerStub()} />);
     expect(
-      screen.queryByRole("dialog", { name: "Welcome to Orbit" }),
+      screen.queryByRole("dialog", { name: "Welcome to BalamOS" }),
     ).not.toBeInTheDocument();
   });
 });
