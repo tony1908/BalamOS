@@ -128,8 +128,12 @@ button {
   font-size: 14px;
   letter-spacing: -0.01em;
 }
-.sb-brand .orbit {
-  --c: var(--focus);
+.sb-brand .balamos-mark {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 7px rgba(31, 214, 210, 0.22));
 }
 .sb-plus {
   margin-left: auto;
@@ -1171,52 +1175,7 @@ button {
   }
 }
 
-/* small orbital mark reused for brand */
-.orbit {
-  --c: var(--text-faint);
-  position: relative;
-  width: 16px;
-  height: 16px;
-  color: var(--c);
-  flex: 0 0 auto;
-}
-.orbit .ring {
-  position: absolute;
-  inset: 0;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-  opacity: 0.45;
-}
-.orbit .core {
-  position: absolute;
-  inset: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.orbit .sat {
-  position: absolute;
-  inset: 0;
-  animation: orbit-spin 3.4s linear infinite;
-}
-.orbit .sat::after {
-  content: "";
-  position: absolute;
-  top: -1px;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  margin-left: -1.5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-@keyframes orbit-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .orbit .sat,
   .live-dot i {
     animation: none;
   }
