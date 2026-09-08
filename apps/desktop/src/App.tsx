@@ -94,12 +94,7 @@ export function OrbitAppView({
         <aside className="pane sb">
           <div className="sb-top">
             <span className="sb-brand">
-              <img
-                className="balamos-mark"
-                src="/balamos-jaguar.png"
-                alt=""
-                aria-hidden="true"
-              />
+              <span className="balamos-mark" aria-hidden="true" />
               BalamOS
             </span>
             <button

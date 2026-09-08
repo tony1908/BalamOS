@@ -132,7 +132,12 @@ button {
   width: 26px;
   height: 26px;
   flex: 0 0 auto;
-  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+  background-image: url("/balamos-guardian.png");
+  background-repeat: no-repeat;
+  background-position: 50% 13%;
+  background-size: 235% auto;
   filter: drop-shadow(0 0 7px rgba(31, 214, 210, 0.22));
 }
 .sb-plus {
