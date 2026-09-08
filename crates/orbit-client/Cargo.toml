@@ -1,0 +1,22 @@
+[package]
+name = "orbit-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+orbit-domain = { path = "../orbit-domain" }
+anyhow.workspace = true
+libc.workspace = true
+interprocess = { workspace = true, features = ["tokio"] }
+orbit-protocol = { version = "0.1.0", path = "../orbit-protocol" }
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread", "time"] }
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+[dev-dependencies]
+orbit-daemon = { version = "0.1.0", path = "../orbit-daemon" }
+orbit-store = { version = "0.1.0", path = "../orbit-store" }
+uuid = { workspace = true, features = ["v4"] }
