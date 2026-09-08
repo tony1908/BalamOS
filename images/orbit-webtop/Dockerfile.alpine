@@ -1,0 +1,31 @@
+# Experimental Alpine variant of orbit-webtop for a size/compat test.
+# Same Selkies stack as the ubuntu base, much smaller OS base, Chromium included.
+FROM lscr.io/linuxserver/webtop:latest
+
+ARG CODEX_VERSION=0.149.1
+ARG OPENCODE_VERSION=1.18.25
+
+# apk (musl) instead of apt. Chromium is already in the alpine webtop base.
+RUN apk add --no-cache jq nodejs npm scrot xdotool sudo \
+    && npm install --global "@openai/codex@${CODEX_VERSION}" "opencode-ai@${OPENCODE_VERSION}" \
+    && npm cache clean --force
+
+# Pin a fixed, roomy desktop resolution (same Selkies env as the ubuntu image).
+# BROWSER makes xdg-open launch chromium directly (the alpine base ships chromium
+# but sets no default web-browser association, so xdg-open would prompt).
+ENV SELKIES_IS_MANUAL_RESOLUTION_MODE=true \
+    SELKIES_MANUAL_WIDTH=1600 \
+    SELKIES_MANUAL_HEIGHT=900 \
+    BROWSER=chromium
+
+COPY orbitctl /usr/local/bin/orbitctl
+COPY skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
+COPY opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
+COPY 20-orbit-codex /custom-cont-init.d/20-orbit-codex
+RUN chmod 0755 /usr/local/bin/orbitctl \
+    /custom-cont-init.d/20-orbit-codex \
+    && printf 'abc ALL=(ALL) NOPASSWD:ALL\n' > /etc/sudoers.d/abc \
+    && chmod 0440 /etc/sudoers.d/abc \
+    && visudo -cf /etc/sudoers.d/abc \
+    && codex --version \
+    && opencode --version

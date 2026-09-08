@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Installs selected Orbit catalog apps into the running workspace.
+# Called by the daemon after container start, AS ROOT: the container runs with
+# no_new_privileges, so `sudo` cannot escalate — the daemon execs this via
+# `docker exec -u root`, which starts as root directly.
+#   orbit-install-apps --profile <observe|workspace|full_control> <app-id>...
+# Idempotent and best-effort: each app guards itself; failures are logged, never fatal.
+set -u
+
+PROFILE=""
+APPS=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --profile) PROFILE="${2:-}"; shift 2 ;;
+    *) APPS+=("$1"); shift ;;
+  esac
+done
+
+log() { printf 'orbit-install-apps: %s\n' "$*"; }
+have_net() { [ "$PROFILE" != "observe" ]; } # ponytail: Observe runs with no container network
+# Root writes directly; keep a sudo fallback for anyone running this by hand as abc.
+SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+# The desktop runs as abc(1000); files root creates in abc's home must be handed back.
+own_abc() { [ "$(id -u)" -eq 0 ] && chown -R abc:abc "$@" 2>/dev/null || true; }
+
+install_metamask() {
+  if [ "$PROFILE" = "full_control" ]; then
+    log "metamask: refused under full_control (the agent would have unrestricted access to the wallet); use the Workspace profile"
+    return 0
+  fi
+  # Firefox force-installs the MetaMask add-on from AMO via enterprise policy.
+  # /etc is not persisted across Reset, so this is re-applied every start (cheap).
+  local dir=/etc/firefox/policies
+  $SUDO mkdir -p "$dir"
+  printf '%s\n' '{"policies":{"ExtensionSettings":{"webextension@metamask.io":{"installation_mode":"force_installed","install_url":"https://addons.mozilla.org/firefox/downloads/latest/ether-metamask/latest.xpi"}}}}' \
+    | $SUDO tee "$dir/policies.json" >/dev/null
+  log "metamask: Firefox policy written (installs on next Firefox launch)"
+}
+
+install_obsidian() {
+  # The Obsidian AppImage runtime links against the unversioned libz.so, which the
+  # webtop base doesn't ship (only libz.so.1); point it there or the runtime can't
+  # start. /usr isn't persisted across Reset, so (re)create it every start — before
+  # the already-installed early-return below. ponytail: symlink, not a -dev package.
+  if [ "$(id -u)" -eq 0 ]; then
+    for f in /usr/lib/*/libz.so.1 /lib/*/libz.so.1; do
+      [ -e "$f" ] && ln -sf "$f" "${f%.1}"
+    done
+  fi
+  local ver="1.13.7" # ponytail: bump to the latest Obsidian release; then recompute the sha below
+  local arch suffix sha256
+  arch="$(uname -m)"
+  case "$arch" in
+    aarch64|arm64) suffix="-arm64"; sha256="e286fd2bb2a5d346a35a577bd764c73fd5537dddec2b99a1a3e5e35974085203" ;;
+    x86_64|amd64)  suffix="";       sha256="" ;; # ponytail: compute+fill the amd64 sha to enforce integrity there too
+    *) log "obsidian: unsupported arch $arch, skipping"; return 0 ;;
+  esac
+  local dest="$HOME/Apps/Obsidian.AppImage"
+  [ -x "$dest" ] && { log "obsidian: already installed"; return 0; }
+  have_net || { log "obsidian: no network under '$PROFILE', skipping"; return 0; }
+  local url="https://github.com/obsidianmd/obsidian-releases/releases/download/v${ver}/Obsidian-${ver}${suffix}.AppImage"
+  mkdir -p "$HOME/Apps"
+  local tmp; tmp="$(mktemp)"
+  if ! curl -fsSL "$url" -o "$tmp"; then
+    log "obsidian: download failed ($url)"; rm -f "$tmp"; return 0
+  fi
+  if [ -n "$sha256" ]; then
+    printf '%s  %s\n' "$sha256" "$tmp" | sha256sum -c - >/dev/null 2>&1 \
+      || { log "obsidian: checksum mismatch, refusing"; rm -f "$tmp"; return 0; }
+  else
+    log "obsidian: WARNING no sha256 pinned; trusting HTTPS from github.com only"
+  fi
+  chmod +x "$tmp"; mv "$tmp" "$dest"
+  mkdir -p "$HOME/.local/share/applications"
+  printf '%s\n' \
+    '[Desktop Entry]' \
+    'Name=Obsidian' \
+    "Exec=env APPIMAGE_EXTRACT_AND_RUN=1 $dest --no-sandbox %u" \
+    'Icon=obsidian' \
+    'Type=Application' \
+    'Categories=Office;' \
+    > "$HOME/.local/share/applications/obsidian.desktop"
+  own_abc "$HOME/Apps" "$HOME/.local/share/applications"
+  log "obsidian: installed $ver"
+}
+
+[ "${#APPS[@]}" -eq 0 ] && { log "no apps requested"; exit 0; }
+for app in "${APPS[@]}"; do
+  case "$app" in
+    metamask) install_metamask ;;
+    obsidian) install_obsidian ;;
+    *) log "unknown app: $app" ;;
+  esac
+done

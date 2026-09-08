@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+set -eu
+
+fail_closed() { exit 1; }
+
+ensure_base_dir() {
+  path=$1
+  if [ -L "$path" ] || { [ -e "$path" ] && [ ! -d "$path" ]; }; then
+    fail_closed
+  fi
+  if [ ! -e "$path" ]; then
+    install -d "$path"
+  fi
+  [ -d "$path" ] && [ ! -L "$path" ] || fail_closed
+}
+
+ensure_private_dir() {
+  path=$1
+  ensure_base_dir "$path"
+  chown abc:abc "$path" || fail_closed
+  chmod 0700 "$path" || fail_closed
+}
+
+ensure_base_dir /config
+ensure_private_dir /config/.codex
+ensure_private_dir /config/.codex/skills
+ensure_private_dir /config/.codex/skills/orbit-desktop-control
+ensure_private_dir /config/orbit
+ensure_private_dir /config/orbit/captures
+ensure_private_dir /config/.cache
+ensure_private_dir /config/.config
+ensure_private_dir /config/.config/opencode
+
+skill_dir=/config/.codex/skills/orbit-desktop-control
+skill_path="$skill_dir/SKILL.md"
+if [ -L "$skill_path" ] || { [ -e "$skill_path" ] && [ ! -f "$skill_path" ]; }; then
+  fail_closed
+fi
+tmp_path=$(mktemp "$skill_dir/.SKILL.md.tmp.XXXXXX") || fail_closed
+trap 'rm -f "$tmp_path"' EXIT HUP INT TERM
+install -m 0600 -o abc -g abc /opt/orbit/skills/orbit-desktop-control/SKILL.md "$tmp_path" || fail_closed
+mv -fT "$tmp_path" "$skill_path" || fail_closed
+trap - EXIT HUP INT TERM
+
+opencode_dir=/config/.config/opencode
+opencode_path="$opencode_dir/AGENTS.md"
+if [ -L "$opencode_path" ] || { [ -e "$opencode_path" ] && [ ! -f "$opencode_path" ]; }; then
+  fail_closed
+fi
+tmp_path=$(mktemp "$opencode_dir/.AGENTS.md.tmp.XXXXXX") || fail_closed
+trap 'rm -f "$tmp_path"' EXIT HUP INT TERM
+install -m 0600 -o abc -g abc /opt/orbit/opencode/AGENTS.md "$tmp_path" || fail_closed
+mv -fT "$tmp_path" "$opencode_path" || fail_closed
+trap - EXIT HUP INT TERM
