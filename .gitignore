@@ -1,9 +1,9 @@
 target/
 node_modules/
 dist/
-coverage/
-.cache/
-.turbo/
+coverage
+.cache
+.turbo
 .DS_Store
 .idea/
 .vscode/
