@@ -98,6 +98,13 @@ export function OnboardingCarousel({ onDone }: { onDone: () => void }) {
       aria-label="Welcome to BalamOS"
     >
       <div className="onboarding-card">
+        {current === 0 && (
+          <img
+            className="onboarding-mascot"
+            src="/balamos-guardian.png"
+            alt="BalamOS guardian jaguar holding a protective shield"
+          />
+        )}
         <Illustration motif={slide.motif} />
         <p className="onboarding-kicker">BALAMOS / 0{current + 1}</p>
         <h1>{slide.title}</h1>
