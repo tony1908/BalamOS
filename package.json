@@ -1,0 +1,13 @@
+{
+  "name": "orbit-workspace",
+  "private": true,
+  "packageManager": "pnpm@11.17.0",
+  "scripts": {
+    "dev": "pnpm --dir apps/desktop tauri dev",
+    "build": "pnpm --dir apps/desktop tauri build",
+    "test": "pnpm test:web && cargo test --workspace",
+    "test:web": "pnpm --dir apps/desktop test --run",
+    "check": "pnpm --dir apps/desktop build && cargo clippy --workspace --all-targets -- -D warnings",
+    "format": "cargo fmt --all && pnpm --dir apps/desktop exec prettier --write src"
+  }
+}

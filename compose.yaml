@@ -1,0 +1,20 @@
+services:
+  webtop:
+    image: lscr.io/linuxserver/webtop:latest
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Mexico_City
+      CUSTOM_USER: agent
+      PASSWORD: "${WEBTOP_PASSWORD:?Set WEBTOP_PASSWORD}"
+      TITLE: Disposable Agent Webtop
+    ports:
+      - "127.0.0.1:3001:3001"
+    tmpfs:
+      - "/config:rw,nosuid,nodev,size=256m"
+    shm_size: "512m"
+    mem_limit: "3g"
+    memswap_limit: "4g"
+    cpus: 2.0
+    pids_limit: 1024
+    restart: "no"
