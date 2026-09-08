@@ -1,0 +1,33 @@
+[package]
+name = "orbit-daemon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+axum.workspace = true
+base64.workspace = true
+libc.workspace = true
+anyhow.workspace = true
+fs2.workspace = true
+async-trait.workspace = true
+clap.workspace = true
+directories.workspace = true
+interprocess = { workspace = true, features = ["tokio"] }
+orbit-domain = { version = "0.1.0", path = "../orbit-domain" }
+orbit-protocol = { version = "0.1.0", path = "../orbit-protocol" }
+orbit-store = { version = "0.1.0", path = "../orbit-store" }
+rand.workspace = true
+reqwest.workspace = true
+thiserror.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+tokio = { workspace = true, features = ["io-util", "macros", "process", "rt-multi-thread", "time"] }
+tokio-tungstenite.workspace = true
+futures-util.workspace = true
+uuid = { workspace = true, features = ["v4"] }
+
+[dev-dependencies]
+orbit-client = { version = "0.1.0", path = "../orbit-client" }
+tempfile = "3"
