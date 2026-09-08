@@ -1,0 +1,12 @@
+[package]
+name = "orbit-protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+orbit-domain = { version = "0.1.0", path = "../orbit-domain" }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+uuid = { workspace = true, features = ["serde", "v4"] }
