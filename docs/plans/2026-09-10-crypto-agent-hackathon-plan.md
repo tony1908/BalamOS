@@ -109,6 +109,25 @@ Each is a **tile in the Plugins hub**, a **daemon capability**, and a **skill in
 - Which stretch: **Ledger** (security narrative) or **The Graph** (read/portfolio narrative)?
 - Are we deploying to **Arc mainnet** by Sep 30 for the +$2.5k bonus?
 
+## 10. Locked target set + container-first build order (2026-09-10 update)
+
+**Added to the target set** (each strengthens the Grok-bot narrative, all cheap riders):
+- **The Graph ($15k pool) — elevated to Tier 2.** MCP/CLI Subgraph reads = the "what's in my wallet / what's moving" layer. Track: *Best AI Tooling (from scratch)*.
+- **Bazantic ($3k) — rides the x402 spine.** Wrap a sponsor API as an x402/MCP **recipe**; the "combine 2+ APIs" track = one agent flow that **reads The Graph and pays via Hedera x402**.
+- **ENS ($5k) — agent namespaces.** Each agent gets `name.balamos.eth` as its **payable identity** for x402. Identity half of "every agent has a name + a wallet."
+
+**Architecture principle — container-first.** Every capability ships as a **container-side CLI the agent invokes**, following the proven `packages/hedera-readonly` pattern: a zero-/few-dep ESM node CLI (`bin` in package.json, method dispatch, JSON to stdout, bounded `fetch`, a `ready` health check, `.test.mjs` tests), COPY'd into the webtop image + installed via `orbit-install-apps`, and taught to the agent through a **skill injected into `AGENTS.md`**. Anything that *spends* is additionally mediated by `orbit-daemon` + governance; **reads need no daemon**.
+
+**Revised build order (starts now):**
+1. **`packages/balamos-graph`** — The Graph read CLI (`ready`, `query <subgraph> <graphql>`, gateway URL via `GRAPH_API_KEY` secret). Read-only, no wallet, unblocked → **first build**. *(Graph)*
+2. **`packages/balamos-x402`** — x402 client CLI (`pay <url>`): read 402 terms → pay (HBAR/HTS-USDC/USDC) → retry. Daemon-mediated + governance budget. *(spine: Hedera/Ledger/Bazantic/Circle)*
+3. **Hedera x402 resource server** + harness extension (`hedera-agent-kit` v4 x402 plugin). *(Hedera ×2)*
+4. **Bazantic recipe** — one agent flow: `balamos-graph` read + `balamos-x402` pay. *(Bazantic)*
+5. **`packages/balamos-ens`** — resolve now; register `*.balamos.eth` subnames as the stretch. *(ENS)*
+6. **Circle Agent Wallet** (real) + Arc deploy. *(Circle/Arc)*
+
+Each becomes a Plugins-hub tile + an `AGENTS.md` skill so it's usable inside the container.
+
 ---
 
-*Sources: [ETHOnline prizes](https://ethglobal.com/events/ethonline2026/prizes) · [x402 on Hedera](https://docs.hedera.com/solutions/ai/x402) · [Hedera x402 scheme](https://hedera.com/blog/hedera-and-the-x402-payment-standard/) · [Hedera Agent Kit V4](https://hedera.com/blog/hedera-agent-kit-v4-policies-modular-packages-and-plugin-updates/) · [Circle Agent Stack](https://www.circle.com/pressroom/circle-launches-ai-infrastructure-to-power-the-agentic-economy)*
+*Sources: [ETHOnline prizes](https://ethglobal.com/events/ethonline2026/prizes) · [x402 on Hedera](https://docs.hedera.com/solutions/ai/x402) · [Hedera x402 scheme](https://hedera.com/blog/hedera-and-the-x402-payment-standard/) · [Hedera Agent Kit V4](https://hedera.com/blog/hedera-agent-kit-v4-policies-modular-packages-and-plugin-updates/) · [Circle Agent Stack](https://www.circle.com/pressroom/circle-launches-ai-infrastructure-to-power-the-agentic-economy) · [The Graph docs](https://thegraph.com/docs/) · [ENS docs](https://docs.ens.domains/)*
