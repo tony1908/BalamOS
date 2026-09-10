@@ -10,14 +10,13 @@ export function SkillsPanel({
   workspaceId: string;
   api?: SkillApiLike;
 }) {
-  const { skills, error, create, update, remove, toggle } = useSkills(
-    workspaceId,
-    api,
-  );
+  const { skills, loading, error, create, update, remove, toggle, reload } =
+    useSkills(workspaceId, api);
   const [editing, setEditing] = useState<Skill | null | false>(false);
   const [name, setName] = useState("");
   const [instruction, setInstruction] = useState("");
   const [enabled, setEnabled] = useState(true);
+  const [pending, setPending] = useState(false);
 
   const openEditor = (skill?: Skill) => {
     setEditing(skill ?? null);
@@ -29,15 +28,37 @@ export function SkillsPanel({
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!name.trim() || !instruction.trim()) return;
-    if (editing)
-      await update(editing.id, name.trim(), instruction.trim(), enabled);
-    else await create(name.trim(), instruction.trim(), enabled);
-    setEditing(false);
+    setPending(true);
+    try {
+      if (editing)
+        await update(editing.id, name.trim(), instruction.trim(), enabled);
+      else await create(name.trim(), instruction.trim(), enabled);
+      setEditing(false);
+    } catch {
+      // useSkills exposes the existing daemon error in the panel.
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <section className="routines">
       {error && <p role="alert">{error}</p>}
+      {error && (
+        <button
+          className="pill"
+          onClick={() => void reload()}
+          disabled={loading || pending}
+        >
+          Retry loading skills
+        </button>
+      )}
+      {!loading && !error && skills.length > 0 && (
+        <p role="status">
+          Skill changes apply when the next harness session starts. Restart the
+          agent or start a new session to load updated instructions.
+        </p>
+      )}
       {skills.length === 0 && editing === false ? (
         <div className="routine-empty">
           <p>Skills are always-on capabilities this bot uses.</p>
@@ -60,14 +81,33 @@ export function SkillsPanel({
                     type="checkbox"
                     aria-label={skill.name}
                     checked={skill.enabled}
-                    onChange={() => void toggle(skill)}
+                    onChange={() => {
+                      setPending(true);
+                      void toggle(skill)
+                        .catch(() => undefined)
+                        .finally(() => setPending(false));
+                    }}
+                    disabled={loading || pending}
                   />{" "}
                   Enabled
                 </label>
-                <button className="pill" onClick={() => openEditor(skill)}>
+                <button
+                  className="pill"
+                  disabled={loading || pending}
+                  onClick={() => openEditor(skill)}
+                >
                   Edit
                 </button>
-                <button className="pill" onClick={() => void remove(skill.id)}>
+                <button
+                  className="pill"
+                  disabled={loading || pending}
+                  onClick={() => {
+                    setPending(true);
+                    void remove(skill.id)
+                      .catch(() => undefined)
+                      .finally(() => setPending(false));
+                  }}
+                >
                   Delete
                 </button>
               </div>
@@ -110,7 +150,7 @@ export function SkillsPanel({
             <button
               className="pill primary"
               type="submit"
-              disabled={!name.trim() || !instruction.trim()}
+              disabled={!name.trim() || !instruction.trim() || pending}
             >
               Save
             </button>

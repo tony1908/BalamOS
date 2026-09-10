@@ -12,6 +12,8 @@ import { useBotSettings } from "./hooks/useBotSettings";
 import { OnboardingCarousel } from "./components/OnboardingCarousel";
 import { GovernancePanel } from "./components/GovernancePanel";
 import { SecretsPanel } from "./components/SecretsPanel";
+import { HederaPanel } from "./components/HederaPanel";
+import { PluginsHub } from "./components/PluginsHub";
 
 // BalamOS — local agent OS, styled after x.ai/bot: a Messages-style app where each
 // workspace is an agent you chat with, plus a live OS pane you can reveal. The
@@ -58,6 +60,8 @@ export function OrbitAppView({
   const [templates, setTemplates] = useState<Template[]>([]);
   const [governanceOpen, setGovernanceOpen] = useState(false);
   const [secretsOpen, setSecretsOpen] = useState(false);
+  const [hederaOpen, setHederaOpen] = useState(false);
+  const [pluginsOpen, setPluginsOpen] = useState(false);
   const [selectedAgentState, setSelectedAgentState] = useState<
     AgentSessionState | undefined
   >(undefined);
@@ -175,6 +179,7 @@ export function OrbitAppView({
           </div>
           <div className="sb-governance">
             <button className="plugins-toggle" onClick={() => setSecretsOpen(true)}>Secrets</button>
+            <button className="plugins-toggle" onClick={() => setPluginsOpen(true)}>Plugins</button>
             <button className="plugins-toggle" onClick={() => setGovernanceOpen(true)}>Governance</button>
           </div>
         </aside>
@@ -210,6 +215,8 @@ export function OrbitAppView({
       </div>
       <GovernancePanel open={governanceOpen} onClose={() => setGovernanceOpen(false)} />
       <SecretsPanel open={secretsOpen} onClose={() => setSecretsOpen(false)} />
+      <HederaPanel workspaceId={selectedId ?? "default"} open={hederaOpen} onClose={() => setHederaOpen(false)} />
+      <PluginsHub open={pluginsOpen} onClose={() => setPluginsOpen(false)} workspaceId={selectedId ?? null} onOpenHedera={() => { setPluginsOpen(false); setHederaOpen(true); }} />
 
       <NewWorkspaceDialog
         open={dialogOpen}

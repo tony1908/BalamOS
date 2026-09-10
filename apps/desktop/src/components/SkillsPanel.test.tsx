@@ -53,4 +53,48 @@ describe("SkillsPanel", () => {
       false,
     );
   });
+
+  it("fails closed while the initial list is loading and retries a rejected list", async () => {
+    const user = userEvent.setup();
+    let rejectList!: (cause: Error) => void;
+    const api = {
+      list: vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise((_, reject) => {
+              rejectList = reject;
+            }),
+        )
+        .mockResolvedValueOnce([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    };
+    render(<SkillsPanel workspaceId="workspace-1" api={api} />);
+    rejectList(new Error("skills unavailable"));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "skills unavailable",
+    );
+    const retry = screen.getByRole("button", { name: "Retry loading skills" });
+    await user.click(retry);
+    expect(
+      await screen.findByRole("button", { name: "Create Skill" }),
+    ).toBeVisible();
+  });
+
+  it("keeps toggle and delete failures visible", async () => {
+    const user = userEvent.setup();
+    const api = {
+      list: vi.fn().mockResolvedValue([skill]),
+      create: vi.fn(),
+      update: vi.fn().mockRejectedValue(new Error("update failed")),
+      remove: vi.fn().mockRejectedValue(new Error("delete failed")),
+    };
+    render(<SkillsPanel workspaceId="workspace-1" api={api} />);
+    await user.click(await screen.findByRole("checkbox", { name: skill.name }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("update failed");
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("delete failed");
+  });
 });
