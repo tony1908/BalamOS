@@ -1,0 +1,7 @@
+{
+  "name": "@balamos/x402",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "bin": { "balamos-x402": "src/cli.mjs" }
+}
