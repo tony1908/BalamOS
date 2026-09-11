@@ -7,7 +7,7 @@
     "build": "pnpm --dir apps/desktop tauri build",
     "test": "pnpm test:web && pnpm test:packages && cargo test --workspace",
     "test:web": "pnpm --dir apps/desktop test --run",
-    "test:packages": "node --test packages/balamos-graph/src/cli.test.mjs packages/balamos-x402/src/cli.test.mjs packages/x402-demo-service/src/server.test.mjs",
+    "test:packages": "node --test packages/balamos-graph/src/cli.test.mjs packages/balamos-x402/src/cli.test.mjs packages/x402-demo-service/src/server.test.mjs packages/balamos-graph-mcp/src/server.test.mjs",
     "check": "pnpm --dir apps/desktop build && cargo clippy --workspace --all-targets -- -D warnings",
     "format": "cargo fmt --all && pnpm --dir apps/desktop exec prettier --write src"
   }
