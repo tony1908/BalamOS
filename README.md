@@ -24,13 +24,14 @@ Every capability is a **container-side CLI** the agent invokes, surfaced as an i
 ## Quickstart
 
 ```bash
-# 1. Run the unit tests for the crypto CLIs  (14 tests)
-node --test packages/balamos-graph/src/cli.test.mjs \
-            packages/balamos-x402/src/cli.test.mjs \
-            packages/x402-demo-service/src/server.test.mjs
+# 1. Run all crypto-CLI unit tests (21 tests)
+pnpm test:packages
 
 # 2. See the x402 discover → (mock) pay flow end to end
 bash scripts/demo-x402.sh
+
+# 2b. See the 2-API recipe (x402 cost + Graph context -> buy/skip decision)
+bash scripts/demo-recipe.sh
 
 # 3. Launch the full desktop app (needs Docker running)
 scripts/dev-app.sh
