@@ -130,4 +130,25 @@ Each becomes a Plugins-hub tile + an `AGENTS.md` skill so it's usable inside the
 
 ---
 
+## 11. Build status (living — updated 2026-09-10)
+
+| Component | What it does | Track | Status |
+|---|---|---|---|
+| `packages/balamos-graph` | Read-only Subgraph query CLI (`ready`, `query`) | The Graph | ✅ built + tested (5/5) |
+| `packages/balamos-x402` | x402 protocol: `inspect` a paywall + header codec | Hedera x402 / Bazantic | ✅ built + tested (5/5) |
+| `packages/x402-demo-service` | x402-gated demo endpoint (402 terms + mock paid) | Hedera x402 | ✅ built + tested (4/4), live-verified |
+| `scripts/demo-x402.sh` | Reproducible discover→(mock)pay walkthrough | demo | 🔨 in progress |
+| Plugins hub (grid→detail, premium) | Install/manage capabilities; 4 tiles | UX | ✅ shipped, 166/166 |
+| Graph + x402 hub tiles + skills | Installable per-workspace, injected into `AGENTS.md` | all | ✅ shipped |
+| Container wiring (Dockerfile + installer) | CLIs usable inside the agent's desktop | all | ✅ code done; verifies on image rebuild |
+| **x402 settlement (real pay)** | Sign + settle HBAR/HTS-USDC under governance cap | Hedera / Circle / Ledger | ⛔ blocked: needs funded mainnet wallet + exact `@x402/hedera` scheme |
+| Circle Agent Wallet (real) | USDC wallet + governance spend policy, Arc deploy | Circle/Arc | ⛔ pending wallet |
+| ENS agent names | `*.balamos.eth` payable identity | ENS | ⛔ registration needs wallet (resolve-read is doable) |
+
+**Executor:** task execution routed through **DeepSeek V4.1 Flash** (`opencode-go/deepseek-v4.1-flash`), Opus 4.8 plans/validates.
+
+**Demo:** `bash scripts/demo-x402.sh` — starts the demo service and shows the agent discovering real x402 terms with no API key.
+
+---
+
 *Sources: [ETHOnline prizes](https://ethglobal.com/events/ethonline2026/prizes) · [x402 on Hedera](https://docs.hedera.com/solutions/ai/x402) · [Hedera x402 scheme](https://hedera.com/blog/hedera-and-the-x402-payment-standard/) · [Hedera Agent Kit V4](https://hedera.com/blog/hedera-agent-kit-v4-policies-modular-packages-and-plugin-updates/) · [Circle Agent Stack](https://www.circle.com/pressroom/circle-launches-ai-infrastructure-to-power-the-agentic-economy) · [The Graph docs](https://thegraph.com/docs/) · [ENS docs](https://docs.ens.domains/)*
