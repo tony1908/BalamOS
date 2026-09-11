@@ -113,6 +113,30 @@ SH
   log "balamos-x402 helper: installed in $dir"
 }
 
+install_balamos_graph_mcp() {
+  local dir=/opt/balamos/graph-mcp
+  local bin=/usr/local/bin/balamos-graph-mcp
+  if ! command -v node >/dev/null 2>&1; then
+    log "balamos-graph-mcp helper: skipped; node is required"
+    return 0
+  fi
+  if [ -d /opt/balamos/graph-mcp-src/src ]; then
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    cp -R /opt/balamos/graph-mcp-src/. "$dir/"
+  else
+    log "balamos-graph-mcp helper: canonical package payload is missing"
+    return 1
+  fi
+  cat >"$bin" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+exec node /opt/balamos/graph-mcp/src/server.mjs "$@"
+SH
+  chmod 0755 "$bin"
+  log "balamos-graph-mcp helper: installed in $dir"
+}
+
 install_circle_cli() {
   local version="1.0.0"
   command -v circle >/dev/null 2>&1 && [ "$(circle --version 2>/dev/null || true)" = "$version" ] && {
@@ -203,6 +227,7 @@ install_obsidian() {
 install_hedera_readonly || CIRCLE_INSTALL_FAILED=1
 install_balamos_graph || CIRCLE_INSTALL_FAILED=1
 install_balamos_x402 || CIRCLE_INSTALL_FAILED=1
+install_balamos_graph_mcp || CIRCLE_INSTALL_FAILED=1
 install_circle_cli || CIRCLE_INSTALL_FAILED=1
 if [ "${#APPS[@]}" -eq 0 ]; then
   log "no apps requested"

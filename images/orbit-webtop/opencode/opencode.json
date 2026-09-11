@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "balamos-graph": {
+      "type": "local",
+      "command": ["node", "/opt/balamos/graph-mcp/src/server.mjs"],
+      "enabled": true
+    }
+  }
+}

@@ -38,6 +38,7 @@ COPY images/orbit-webtop/orbitctl /usr/local/bin/orbitctl
 COPY images/orbit-webtop/orbit-install-apps /usr/local/bin/orbit-install-apps
 COPY images/orbit-webtop/skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
 COPY images/orbit-webtop/opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
+COPY images/orbit-webtop/opencode/opencode.json /opt/orbit/opencode/opencode.json
 COPY images/orbit-webtop/20-orbit-codex /custom-cont-init.d/20-orbit-codex
 COPY packages/hedera-readonly/package.json /opt/balamos/hedera-src/package.json
 COPY packages/hedera-readonly/src/ /opt/balamos/hedera-src/src/
@@ -45,6 +46,8 @@ COPY packages/balamos-graph/package.json /opt/balamos/graph-src/package.json
 COPY packages/balamos-graph/src/ /opt/balamos/graph-src/src/
 COPY packages/balamos-x402/package.json /opt/balamos/x402-src/package.json
 COPY packages/balamos-x402/src/ /opt/balamos/x402-src/src/
+COPY packages/balamos-graph-mcp/package.json /opt/balamos/graph-mcp-src/package.json
+COPY packages/balamos-graph-mcp/src/ /opt/balamos/graph-mcp-src/src/
 RUN chmod 0755 /usr/local/bin/orbitctl \
     /usr/local/bin/orbit-install-apps \
     /custom-cont-init.d/20-orbit-codex \

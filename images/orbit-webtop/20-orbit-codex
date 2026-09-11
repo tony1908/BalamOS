@@ -52,3 +52,13 @@ trap 'rm -f "$tmp_path"' EXIT HUP INT TERM
 install -m 0600 -o abc -g abc /opt/orbit/opencode/AGENTS.md "$tmp_path" || fail_closed
 mv -fT "$tmp_path" "$opencode_path" || fail_closed
 trap - EXIT HUP INT TERM
+
+opencode_config_path="$opencode_dir/opencode.json"
+if [ -L "$opencode_config_path" ] || { [ -e "$opencode_config_path" ] && [ ! -f "$opencode_config_path" ]; }; then
+  fail_closed
+fi
+tmp_path=$(mktemp "$opencode_dir/.opencode.json.tmp.XXXXXX") || fail_closed
+trap 'rm -f "$tmp_path"' EXIT HUP INT TERM
+install -m 0600 -o abc -g abc /opt/orbit/opencode/opencode.json "$tmp_path" || fail_closed
+mv -fT "$tmp_path" "$opencode_config_path" || fail_closed
+trap - EXIT HUP INT TERM
