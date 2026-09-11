@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { useWorkspaces, type WorkspaceController } from "./hooks/useWorkspaces";
 import { NewWorkspaceDialog } from "./components/NewWorkspaceDialog";
@@ -85,6 +85,17 @@ export function OrbitAppView({
     selected ? botSettings.get(selected.id).displayName || selected.name : "",
     selected ? botSettings.get(selected.id).notifications : false,
   );
+  const prevWorkspace = useRef<{ id?: string; state?: string }>({});
+  useEffect(() => {
+    const id = selected?.id;
+    const state = selected?.state;
+    const prev = prevWorkspace.current;
+    // Auto-reveal the live desktop when THIS workspace starts (non-running -> running).
+    if (id && state === "running" && prev.id === id && prev.state !== "running") {
+      setShowOs(true);
+    }
+    prevWorkspace.current = { id, state };
+  }, [selected?.id, selected?.state]);
   const needle = query.trim().toLowerCase();
   const list = workspaces.filter((row) =>
     `${row.name} ${row.host_path}`.toLowerCase().includes(needle),
