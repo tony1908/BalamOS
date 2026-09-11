@@ -1416,10 +1416,11 @@ button {
 .plugins-hub-card h2 { margin: 6px 0 0; font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
 .plugins-hub-head p { margin: 5px 0 0; color: var(--text-dim); font-size: 13px; }
 
-.plugin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 22px; }
+.plugin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-top: 22px; }
 .plugin-tile {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 22px 14px 18px; border: 1px solid var(--line); border-radius: 16px; cursor: pointer; text-align: center; color: var(--text);
+  min-height: 200px; justify-content: flex-start;
   background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012));
   transition: transform 0.18s cubic-bezier(0.2,0.7,0.2,1), border-color 0.18s, box-shadow 0.18s;
   animation: plugin-rise 0.5s both;
@@ -1438,8 +1439,8 @@ button {
   content: ""; position: absolute; inset: 0; border-radius: 17px;
   background: linear-gradient(180deg, rgba(255,255,255,0.22), transparent 45%); mix-blend-mode: overlay;
 }
-.plugin-tile .plugin-title { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
-.plugin-state { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; color: var(--run); }
+.plugin-tile .plugin-title { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; min-height: 2.6em; display: flex; align-items: center; justify-content: center; }
+.plugin-state { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; color: var(--run); margin-top: auto; }
 .plugin-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--run); }
 .plugin-state.avail { color: var(--text-faint); }
 .plugin-state.avail::before { background: var(--text-faint); box-shadow: none; }
