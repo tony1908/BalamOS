@@ -71,7 +71,7 @@ export function PluginsHub({
               <span
                 className="plugin-icon"
                 aria-hidden="true"
-                style={{ backgroundImage: `linear-gradient(140deg, ${selected.accent}, ${selected.accentEnd})`, boxShadow: `0 8px 22px -6px ${selected.accent}80, inset 0 1px 0 rgba(255,255,255,0.35)` }}
+                style={{ backgroundImage: `linear-gradient(140deg, ${selected.accent}, ${selected.accentEnd})` }}
               >
                 {selected.icon}
               </span>
@@ -122,7 +122,7 @@ export function PluginsHub({
                   <span
                     className="plugin-icon"
                     aria-hidden="true"
-                    style={{ backgroundImage: `linear-gradient(140deg, ${plugin.accent}, ${plugin.accentEnd})`, boxShadow: `0 8px 22px -6px ${plugin.accent}80, inset 0 1px 0 rgba(255,255,255,0.35)` }}
+                    style={{ backgroundImage: `linear-gradient(140deg, ${plugin.accent}, ${plugin.accentEnd})` }}
                   >
                     {plugin.icon}
                   </span>
