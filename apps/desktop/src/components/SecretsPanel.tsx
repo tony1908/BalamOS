@@ -145,147 +145,139 @@ export function SecretsPanel({
         tabIndex={-1}
         ref={dialog}
       >
-        <header className="governance-head">
-          <h2 id="secrets-title">Secrets</h2>
-          <button
-            className="icon-btn"
-            aria-label="Close secrets"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </header>
-        <p>
-          Values are stored in the OS credential store. Assigned agents can
-          access them; updates apply to new sessions.
-        </p>
-        {error && <p role="alert">{error}</p>}
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <div className="routine-list">
-            {secrets.map((secret) => (
-              <div className="routine-row" key={secret.id}>
-                <label>
-                  {workspaceId && (
-                    <input
-                      type="checkbox"
-                      checked={assigned.has(secret.id)}
-                      disabled={disabled}
-                      onChange={() =>
-                        void act(
-                          () =>
-                            assigned.has(secret.id)
-                              ? api.unassign(secret.id, workspaceId)
-                              : api.assign(secret.id, workspaceId),
-                          () =>
-                            setAssigned((current) => {
-                              const next = new Set(current);
-                              if (next.has(secret.id)) next.delete(secret.id);
-                              else next.add(secret.id);
-                              return next;
-                            }),
-                        )
-                      }
-                    />
-                  )}
-                  <strong>{secret.name}</strong>
-                  <small>{secret.env_name}</small>
-                </label>
-                <button
-                  className="pill"
-                  disabled={disabled}
-                  onClick={() => {
-                    setSelected(selected === secret.id ? null : secret.id);
-                    setReplaceValue("");
-                  }}
-                >
-                  Replace
-                </button>
-                <button
-                  className="pill danger"
-                  disabled={disabled}
-                  onClick={() => void act(() => api.remove(secret.id))}
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
+        <div className="governance-head">
+          <div>
+            <span className="eyebrow">SECRETS</span>
+            <h2 id="secrets-title">Secrets</h2>
           </div>
-        )}
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (name.trim() && env.trim() && addValue)
-              void act(
-                () => api.create(name.trim(), env.trim(), addValue),
-                () => {
-                  setName("");
-                  setEnv("");
-                  setAddValue("");
-                },
-              );
-          }}
-        >
-          <h3>Add secret</h3>
-          <input
-            disabled={disabled}
-            aria-label="Name"
-            placeholder="Name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <input
-            disabled={disabled}
-            aria-label="Environment name"
-            placeholder="Environment name"
-            value={env}
-            onChange={(event) => setEnv(event.target.value)}
-          />
-          <input
-            disabled={disabled}
-            aria-label="Password value"
-            type="password"
-            value={addValue}
-            onChange={(event) => setAddValue(event.target.value)}
-          />
-          <button
-            className="pill primary"
-            disabled={disabled || !name.trim() || !env.trim() || !addValue}
-          >
-            Add
-          </button>
-        </form>
-        {selected && (
+          <button className="icon-btn" aria-label="Close secrets" onClick={onClose}>×</button>
+        </div>
+        <p className="governance-sub">
+          Stored in the OS credential store.{workspaceId ? " Assigned agents can read them;" : ""} updates apply to new sessions.
+        </p>
+        {error && <p className="governance-error" role="alert">{error}</p>}
+
+        <section className="gov-section">
+          <header className="gov-section-head">
+            <h3>Stored secrets</h3>
+            <p>{workspaceId ? "Toggle which secrets this agent can read." : "Credentials available to assign to agents."}</p>
+          </header>
+          {loading ? (
+            <p role="status">Loading…</p>
+          ) : secrets.length === 0 ? (
+            <p className="governance-note">No secrets yet.</p>
+          ) : (
+            secrets.map((secret) => (
+              <div className="gov-rule-card" key={secret.id}>
+                <div className="gov-rule-top">
+                  <span className="secret-id">
+                    <strong>{secret.name}</strong>
+                    <small>{secret.env_name}</small>
+                  </span>
+                  {workspaceId && (
+                    <label className="gov-apply">
+                      <input
+                        type="checkbox"
+                        checked={assigned.has(secret.id)}
+                        disabled={disabled}
+                        onChange={() =>
+                          void act(
+                            () =>
+                              assigned.has(secret.id)
+                                ? api.unassign(secret.id, workspaceId)
+                                : api.assign(secret.id, workspaceId),
+                            () =>
+                              setAssigned((current) => {
+                                const next = new Set(current);
+                                if (next.has(secret.id)) next.delete(secret.id);
+                                else next.add(secret.id);
+                                return next;
+                              }),
+                          )
+                        }
+                      />
+                      <span>Assign</span>
+                    </label>
+                  )}
+                </div>
+                {selected === secret.id && (
+                  <label className="ws-field">
+                    <span>Replacement password</span>
+                    <input
+                      disabled={disabled}
+                      aria-label="Replacement password"
+                      type="password"
+                      value={replaceValue}
+                      onChange={(event) => setReplaceValue(event.target.value)}
+                    />
+                  </label>
+                )}
+                <div className="governance-actions">
+                  {selected === secret.id ? (
+                    <>
+                      <button className="pill" disabled={disabled} onClick={() => { setSelected(null); setReplaceValue(""); }}>Cancel</button>
+                      <button
+                        className="pill primary"
+                        disabled={disabled || !replaceValue}
+                        onClick={() =>
+                          void act(
+                            () => api.replace(secret.id, replaceValue),
+                            () => { setReplaceValue(""); setSelected(null); },
+                          )
+                        }
+                      >
+                        Replace value
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="pill"
+                      disabled={disabled}
+                      onClick={() => { setSelected(secret.id); setReplaceValue(""); }}
+                    >
+                      Replace
+                    </button>
+                  )}
+                  <button className="pill danger" disabled={disabled} onClick={() => void act(() => api.remove(secret.id))}>Delete</button>
+                </div>
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="gov-section">
+          <header className="gov-section-head">
+            <h3>Add secret</h3>
+            <p>Create a new credential.</p>
+          </header>
           <form
+            className="secret-add"
             onSubmit={(event) => {
               event.preventDefault();
-              if (replaceValue)
+              if (name.trim() && env.trim() && addValue)
                 void act(
-                  () => api.replace(selected, replaceValue),
-                  () => {
-                    setReplaceValue("");
-                    setSelected(null);
-                  },
+                  () => api.create(name.trim(), env.trim(), addValue),
+                  () => { setName(""); setEnv(""); setAddValue(""); },
                 );
             }}
           >
-            <h3>Replace value</h3>
-            <input
-              disabled={disabled}
-              aria-label="Replacement password"
-              type="password"
-              value={replaceValue}
-              onChange={(event) => setReplaceValue(event.target.value)}
-            />
-            <button
-              className="pill primary"
-              disabled={disabled || !replaceValue}
-            >
-              Replace value
-            </button>
+            <label className="ws-field">
+              <span>Name</span>
+              <input disabled={disabled} aria-label="Name" value={name} onChange={(event) => setName(event.target.value)} />
+            </label>
+            <label className="ws-field">
+              <span>Environment name</span>
+              <input disabled={disabled} aria-label="Environment name" value={env} onChange={(event) => setEnv(event.target.value)} />
+            </label>
+            <label className="ws-field">
+              <span>Password value</span>
+              <input disabled={disabled} aria-label="Password value" type="password" value={addValue} onChange={(event) => setAddValue(event.target.value)} />
+            </label>
+            <div className="governance-actions">
+              <button className="pill primary" disabled={disabled || !name.trim() || !env.trim() || !addValue}>Add</button>
+            </div>
           </form>
-        )}
+        </section>
       </section>
     </div>
   );
