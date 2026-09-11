@@ -1622,3 +1622,6 @@ button {
     grid-template-columns: var(--sidebar-w) minmax(0, 1.1fr) minmax(0, 0.92fr);
   }
 }
+.sysline-paused {
+  color: var(--wait);
+}

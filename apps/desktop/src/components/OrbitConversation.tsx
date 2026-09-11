@@ -112,6 +112,11 @@ export function OrbitConversationView({
             </div>
           </div>
         )}
+        {state === "interrupted" && (
+          <div className="sysline sysline-paused" role="status">
+            Agent paused — you have manual control of the desktop. Send a message to resume.
+          </div>
+        )}
         {agent.error && (
           <div className="row in">
             <div className="bubble in error" role="alert">
