@@ -6,6 +6,7 @@
 #   orbit-install-apps --profile <observe|workspace|full_control> <app-id>...
 # Idempotent and best-effort: each app guards itself; failures are logged, never fatal.
 set -u
+CIRCLE_INSTALL_FAILED=0
 
 PROFILE=""
 APPS=()
@@ -22,6 +23,121 @@ have_net() { [ "$PROFILE" != "observe" ]; } # ponytail: Observe runs with no con
 SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
 # The desktop runs as abc(1000); files root creates in abc's home must be handed back.
 own_abc() { [ "$(id -u)" -eq 0 ] && chown -R abc:abc "$@" 2>/dev/null || true; }
+
+install_hedera_readonly() {
+  local dir=/opt/balamos/hedera
+  local bin=/usr/local/bin/balamos-hedera-readonly
+  if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+    log "Hedera readonly helper: skipped; node and npm are required"
+    return 0
+  fi
+  if [ "$PROFILE" = "observe" ]; then
+    log "Hedera readonly helper: skipped; observe profile has no network"
+    return 0
+  fi
+  if [ -d /opt/balamos/hedera-src/src ]; then
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    cp -R /opt/balamos/hedera-src/. "$dir/"
+  else
+    log "Hedera readonly helper: canonical package payload is missing"
+    return 1
+  fi
+  if ! npm install --prefix "$dir" --omit=dev --ignore-scripts >/dev/null 2>&1; then
+    log "Hedera readonly helper: dependency installation failed"
+    return 1
+  fi
+  cat >"$bin" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+exec node /opt/balamos/hedera/src/cli.mjs "$@"
+  SH
+  chmod 0755 "$bin"
+  cat > /usr/local/bin/balamos-hedera-transfer <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+exec node /opt/balamos/hedera/src/agent-cli.mjs "$@"
+SH
+  chmod 0755 /usr/local/bin/balamos-hedera-transfer
+  "$bin" ready >/dev/null || { log "Hedera readonly helper: readiness failed"; return 1; }
+  log "Hedera readonly helper: installed in $dir"
+}
+
+install_balamos_graph() {
+  local dir=/opt/balamos/graph
+  local bin=/usr/local/bin/balamos-graph
+  if ! command -v node >/dev/null 2>&1; then
+    log "balamos-graph helper: skipped; node is required"
+    return 0
+  fi
+  if [ -d /opt/balamos/graph-src/src ]; then
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    cp -R /opt/balamos/graph-src/. "$dir/"
+  else
+    log "balamos-graph helper: canonical package payload is missing"
+    return 1
+  fi
+  cat >"$bin" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+exec node /opt/balamos/graph/src/cli.mjs "$@"
+SH
+  chmod 0755 "$bin"
+  "$bin" ready >/dev/null || { log "balamos-graph helper: readiness failed"; return 1; }
+  log "balamos-graph helper: installed in $dir"
+}
+
+install_balamos_x402() {
+  local dir=/opt/balamos/x402
+  local bin=/usr/local/bin/balamos-x402
+  if ! command -v node >/dev/null 2>&1; then
+    log "balamos-x402 helper: skipped; node is required"
+    return 0
+  fi
+  if [ -d /opt/balamos/x402-src/src ]; then
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    cp -R /opt/balamos/x402-src/. "$dir/"
+  else
+    log "balamos-x402 helper: canonical package payload is missing"
+    return 1
+  fi
+  cat >"$bin" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+exec node /opt/balamos/x402/src/cli.mjs "$@"
+SH
+  chmod 0755 "$bin"
+  "$bin" ready >/dev/null || { log "balamos-x402 helper: readiness failed"; return 1; }
+  log "balamos-x402 helper: installed in $dir"
+}
+
+install_circle_cli() {
+  local version="1.0.0"
+  command -v circle >/dev/null 2>&1 && [ "$(circle --version 2>/dev/null || true)" = "$version" ] && {
+    log "Circle wallet CLI: already installed ($version; executable circle, not circleci)"
+    return 0
+  }
+  if ! have_net; then
+    log "Circle wallet CLI: unavailable; observe profile has no network and the image does not contain @circle-fin/cli@$version"
+    return 0
+  fi
+  if ! command -v node >/dev/null 2>&1 || ! node -e 'const [major,minor,patch]=process.versions.node.split(".").map(Number); process.exit(major > 20 || (major === 20 && (minor > 18 || (minor === 18 && patch >= 2))) ? 0 : 1)'; then
+    log "Circle wallet CLI: skipped; Node >=20.18.2 is required"
+    return 0
+  fi
+  if ! command -v npm >/dev/null 2>&1; then
+    log "Circle wallet CLI: skipped; npm is unavailable"
+    return 0
+  fi
+  if npm view "@circle-fin/cli@$version" version >/dev/null 2>&1 && npm install --global "@circle-fin/cli@$version" >/dev/null 2>&1; then
+    log "Circle wallet CLI: installed @circle-fin/cli@$version (executable circle, not circleci)"
+  else
+    log "Circle wallet CLI: installation failed for @circle-fin/cli@$version; no login or wallet operation was attempted"
+    return 1
+  fi
+}
 
 install_metamask() {
   if [ "$PROFILE" = "full_control" ]; then
@@ -84,11 +200,20 @@ install_obsidian() {
   log "obsidian: installed $ver"
 }
 
-[ "${#APPS[@]}" -eq 0 ] && { log "no apps requested"; exit 0; }
-for app in "${APPS[@]}"; do
-  case "$app" in
-    metamask) install_metamask ;;
-    obsidian) install_obsidian ;;
-    *) log "unknown app: $app" ;;
-  esac
-done
+install_hedera_readonly || CIRCLE_INSTALL_FAILED=1
+install_balamos_graph || CIRCLE_INSTALL_FAILED=1
+install_balamos_x402 || CIRCLE_INSTALL_FAILED=1
+install_circle_cli || CIRCLE_INSTALL_FAILED=1
+if [ "${#APPS[@]}" -eq 0 ]; then
+  log "no apps requested"
+else
+  for app in "${APPS[@]}"; do
+    case "$app" in
+      metamask) install_metamask ;;
+      obsidian) install_obsidian ;;
+      *) log "unknown app: $app" ;;
+    esac
+  done
+fi
+
+exit "$CIRCLE_INSTALL_FAILED"

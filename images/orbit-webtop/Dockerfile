@@ -2,6 +2,7 @@ FROM lscr.io/linuxserver/webtop:ubuntu-xfce@sha256:1bd141d5d7aaf3e98e47b7d9665f5
 
 ARG CODEX_VERSION=0.149.1
 ARG OPENCODE_VERSION=1.18.25
+ARG CIRCLE_CLI_VERSION=1.0.0
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -13,7 +14,8 @@ RUN apt-get update \
         scrot \
         sudo \
         xdotool \
-    && npm install --global "@openai/codex@${CODEX_VERSION}" "opencode-ai@${OPENCODE_VERSION}" "@anthropic-ai/claude-code" "@google/gemini-cli" \
+    && node -e 'const [major,minor,patch]=process.versions.node.split(".").map(Number); if (major < 20 || (major === 20 && (minor < 18 || (minor === 18 && patch < 2)))) process.exit(1)' \
+    && npm install --global "@openai/codex@${CODEX_VERSION}" "opencode-ai@${OPENCODE_VERSION}" "@circle-fin/cli@${CIRCLE_CLI_VERSION}" "@anthropic-ai/claude-code" "@google/gemini-cli" \
     && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
 
@@ -32,11 +34,17 @@ ENV SELKIES_IS_MANUAL_RESOLUTION_MODE=true \
     SELKIES_MANUAL_HEIGHT=900 \
     BROWSER=firefox
 
-COPY orbitctl /usr/local/bin/orbitctl
-COPY orbit-install-apps /usr/local/bin/orbit-install-apps
-COPY skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
-COPY opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
-COPY 20-orbit-codex /custom-cont-init.d/20-orbit-codex
+COPY images/orbit-webtop/orbitctl /usr/local/bin/orbitctl
+COPY images/orbit-webtop/orbit-install-apps /usr/local/bin/orbit-install-apps
+COPY images/orbit-webtop/skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
+COPY images/orbit-webtop/opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
+COPY images/orbit-webtop/20-orbit-codex /custom-cont-init.d/20-orbit-codex
+COPY packages/hedera-readonly/package.json /opt/balamos/hedera-src/package.json
+COPY packages/hedera-readonly/src/ /opt/balamos/hedera-src/src/
+COPY packages/balamos-graph/package.json /opt/balamos/graph-src/package.json
+COPY packages/balamos-graph/src/ /opt/balamos/graph-src/src/
+COPY packages/balamos-x402/package.json /opt/balamos/x402-src/package.json
+COPY packages/balamos-x402/src/ /opt/balamos/x402-src/src/
 RUN chmod 0755 /usr/local/bin/orbitctl \
     /usr/local/bin/orbit-install-apps \
     /custom-cont-init.d/20-orbit-codex \
@@ -45,6 +53,7 @@ RUN chmod 0755 /usr/local/bin/orbitctl \
     && visudo -cf /etc/sudoers.d/abc \
     && codex --version | grep -F "codex-cli ${CODEX_VERSION}" \
     && opencode --version \
+    && circle --version | grep -F "${CIRCLE_CLI_VERSION}" \
     && claude --version \
     && gemini --version \
     && firefox --version
