@@ -284,15 +284,18 @@ button {
 }
 .plugins-toggle {
   width: 100%;
-  padding: 7px 8px;
+  padding: 7px 8px 7px 10px;
   border-radius: 8px;
   text-align: left;
   color: inherit;
   font-size: 12.5px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  border-left: 2px solid transparent;
 }
 .plugins-toggle:hover {
   background: var(--raise);
   color: var(--text);
+  border-left-color: var(--accent);
 }
 .placeholder-note,
 .inspector-placeholder {
@@ -404,12 +407,15 @@ button {
 }
 .rt-dot.ok {
   background: var(--run);
+  box-shadow: 0 0 8px var(--run);
 }
 .rt-dot.warn {
   background: var(--wait);
+  box-shadow: 0 0 8px var(--wait);
 }
 .rt-dot.bad {
   background: var(--fail);
+  box-shadow: 0 0 8px var(--fail);
 }
 .rt-label {
   flex: 1;
