@@ -1405,11 +1405,11 @@ button {
   margin-top: 4px;
 }
 .docker-card.plugins-hub-card {
-  max-width: 620px; width: 100%; display: block; text-align: left; position: relative;
+  max-width: 720px; height: 500px; max-height: 88vh; width: 100%; display: block; text-align: left; position: relative;
   padding: 26px 26px 24px; border-radius: 20px; border: 1px solid var(--line);
   background: linear-gradient(180deg, #141416, #0e0e10);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 30px 80px -30px rgba(0,0,0,0.9);
-  overflow: hidden;
+  overflow-y: auto; overflow-x: hidden;
 }
 .plugins-hub-card::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
