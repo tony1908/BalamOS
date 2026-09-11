@@ -161,3 +161,20 @@
   justify-content: flex-start;
   margin-top: 4px;
 }
+.governance-sub { color: var(--text-dim); font-size: 13px; margin: 4px 0 18px; }
+.gov-section { border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.02); padding: 16px 18px; margin-bottom: 16px; }
+.gov-section-head { margin-bottom: 12px; }
+.gov-section-head h3 { margin: 0; font-size: 14px; font-weight: 650; }
+.gov-section-head p { margin: 3px 0 0; color: var(--text-faint); font-size: 12px; }
+.gov-toggle-list { display: flex; flex-direction: column; }
+.gov-toggle { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 11px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.gov-toggle:first-child { border-top: none; padding-top: 2px; }
+.gov-toggle input { margin-top: 2px; }
+.gov-toggle-text { display: flex; flex-direction: column; gap: 2px; }
+.gov-toggle-text strong { font-size: 13px; font-weight: 600; }
+.gov-toggle-text small { color: var(--text-faint); font-size: 12px; line-height: 1.4; }
+.gov-rule-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gov-apply { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; }
+.gov-subhead { margin: 16px 0 8px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); }
+.gov-footer { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 18px; }
+.gov-count { margin-right: auto; color: var(--text-dim); font-size: 12px; }

@@ -184,260 +184,125 @@ export function GovernancePanel({
         <div className="governance-head">
           <div>
             <span className="eyebrow">GOVERNANCE</span>
-            <h2 id="governance-title">
-              {global ? "Global governance" : "Agent governance"}
-            </h2>
+            <h2 id="governance-title">{global ? "Global governance" : "Agent governance"}</h2>
           </div>
-          <button
-            className="icon-btn"
-            aria-label="Close governance"
-            onClick={onClose}
-          >
-            ×
-          </button>
+          <button className="icon-btn" aria-label="Close governance" onClick={onClose}>×</button>
         </div>
-        {loading && <p role="status">Loading…</p>}
-        <div className="gov-controls">
-          <label>
-            <input
-              type="checkbox"
-              checked={(draft as GovernancePolicy).enabled !== false}
-              onChange={(e) => setControl("enabled", e.currentTarget.checked)}
-            />
-            <span>Agent enabled</span>
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!(draft as GovernancePolicy).require_approval}
-              onChange={(e) =>
-                setControl("require_approval", e.currentTarget.checked)
-              }
-            />
-            <span>Require approval</span>
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!(draft as GovernancePolicy).require_container}
-              onChange={(e) =>
-                setControl("require_container", e.currentTarget.checked)
-              }
-            />
-            <span>Require container</span>
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={(draft as GovernancePolicy).allow_scheduled !== false}
-              onChange={(e) =>
-                setControl("allow_scheduled", e.currentTarget.checked)
-              }
-            />
-            <span>Allow scheduled</span>
-          </label>
-        </div>
-        <p className="governance-note">
-          Controls are enforced. Rules below are advisory guidance injected into
-          the agent.
+        <p className="governance-sub">
+          {global
+            ? "Baseline policy and the shared rule library for every agent."
+            : "Controls and guidance for this agent. Enforcement is hard; rules are advisory."}
         </p>
-        <h3>Rule library</h3>
-        {library.map((rule) => (
-          <div className="gov-rule-card" key={rule.id}>
-            {editId === rule.id ? (
-              <>
-                <label className="ws-field">
-                  <span>Title</span>
-                  <input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.currentTarget.value)}
-                  />
-                </label>
-                <label className="ws-field">
-                  <span>Instruction</span>
-                  <textarea
-                    value={editBody}
-                    onChange={(e) => setEditBody(e.currentTarget.value)}
-                  />
-                </label>
-                <div className="governance-actions">
-                  <button className="pill" onClick={() => setEditId(null)}>
-                    Cancel
-                  </button>
-                  <button
-                    className="pill primary"
-                    onClick={() => void saveEdit()}
-                  >
-                    Save rule
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <strong>{rule.title}</strong>
-                <p className="governance-pre">{rule.body}</p>
-                <div className="governance-actions">
-                  <button
-                    className="pill"
-                    onClick={() => {
-                      setEditId(rule.id);
-                      setEditTitle(rule.title);
-                      setEditBody(rule.body);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="pill danger"
-                    onClick={() => void deleteLibraryRule(rule.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </>
-            )}
+        {loading && <p role="status">Loading…</p>}
+
+        <section className="gov-section">
+          <header className="gov-section-head">
+            <h3>Enforcement</h3>
+            <p>Hard controls, enforced by the runtime.</p>
+          </header>
+          <div className="gov-toggle-list">
+            <label className="gov-toggle">
+              <input type="checkbox" checked={(draft as GovernancePolicy).enabled !== false} onChange={(e) => setControl("enabled", e.currentTarget.checked)} />
+              <span className="gov-toggle-text"><strong>Agent enabled</strong><small>The agent is allowed to run.</small></span>
+            </label>
+            <label className="gov-toggle">
+              <input type="checkbox" checked={!!(draft as GovernancePolicy).require_approval} onChange={(e) => setControl("require_approval", e.currentTarget.checked)} />
+              <span className="gov-toggle-text"><strong>Require approval</strong><small>Pause for a human before the agent acts.</small></span>
+            </label>
+            <label className="gov-toggle">
+              <input type="checkbox" checked={!!(draft as GovernancePolicy).require_container} onChange={(e) => setControl("require_container", e.currentTarget.checked)} />
+              <span className="gov-toggle-text"><strong>Require container</strong><small>Only run inside a sandboxed container.</small></span>
+            </label>
+            <label className="gov-toggle">
+              <input type="checkbox" checked={(draft as GovernancePolicy).allow_scheduled !== false} onChange={(e) => setControl("allow_scheduled", e.currentTarget.checked)} />
+              <span className="gov-toggle-text"><strong>Allow scheduled</strong><small>Permit scheduled and routine runs.</small></span>
+            </label>
           </div>
-        ))}
-        {addingRule ? (
-          <div className="gov-rule-card">
-            <label className="ws-field">
-              <span>New rule title</span>
-              <input
-                aria-label="New rule title"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.currentTarget.value)}
-              />
-            </label>
-            <label className="ws-field">
-              <span>Instruction</span>
-              <textarea
-                aria-label="New rule body"
-                value={newBody}
-                onChange={(e) => setNewBody(e.currentTarget.value)}
-              />
-            </label>
-            <div className="governance-actions">
-              <button
-                className="pill"
-                onClick={() => {
-                  setAddingRule(false);
-                  setNewTitle("");
-                  setNewBody("");
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="pill primary"
-                disabled={!newTitle.trim()}
-                onClick={() => void addLibraryRule()}
-              >
-                Add rule
-              </button>
+        </section>
+
+        <section className="gov-section">
+          <header className="gov-section-head">
+            <h3>Rules</h3>
+            <p>Advisory guidance injected into the agent's prompt.{!global && " Toggle which apply to this agent."}</p>
+          </header>
+          {library.map((rule) => (
+            <div className="gov-rule-card" key={rule.id}>
+              {editId === rule.id ? (
+                <>
+                  <label className="ws-field"><span>Title</span><input value={editTitle} onChange={(e) => setEditTitle(e.currentTarget.value)} /></label>
+                  <label className="ws-field"><span>Instruction</span><textarea value={editBody} onChange={(e) => setEditBody(e.currentTarget.value)} /></label>
+                  <div className="governance-actions">
+                    <button className="pill" onClick={() => setEditId(null)}>Cancel</button>
+                    <button className="pill primary" onClick={() => void saveEdit()}>Save rule</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="gov-rule-top">
+                    <strong>{rule.title}</strong>
+                    {!global && (
+                      <label className="gov-apply">
+                        <input type="checkbox" aria-label={rule.title} checked={applied().includes(rule.id)} onChange={() => toggleApplied(rule.id)} />
+                        <span>Apply</span>
+                      </label>
+                    )}
+                  </div>
+                  {rule.body && <p className="governance-pre">{rule.body}</p>}
+                  <div className="governance-actions">
+                    <button className="pill" onClick={() => { setEditId(rule.id); setEditTitle(rule.title); setEditBody(rule.body); }}>Edit</button>
+                    <button className="pill danger" onClick={() => void deleteLibraryRule(rule.id)}>Delete</button>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        ) : (
-          <button className="pill primary" onClick={() => setAddingRule(true)}>
-            + Add rule
-          </button>
-        )}
-        {!global && (
-          <>
-            <h3>Applied to this agent</h3>
-            {library.map((rule) => (
-              <label className="governance-switch" key={rule.id}>
-                <input
-                  type="checkbox"
-                  checked={applied().includes(rule.id)}
-                  onChange={() => toggleApplied(rule.id)}
-                />
-                <span>{rule.title}</span>
-              </label>
-            ))}
-            {customRules().map((rule) => (
-              <div className="gov-rule-card" key={rule.id}>
-                <strong>{rule.title}</strong>
-                <p className="governance-pre">{rule.body}</p>
-                <div className="governance-actions">
-                  <button
-                    className="pill danger"
-                    onClick={() => removeCustomRule(rule.id)}
-                  >
-                    Remove
-                  </button>
-                </div>
+          ))}
+          {addingRule ? (
+            <div className="gov-rule-card">
+              <label className="ws-field"><span>New rule title</span><input aria-label="New rule title" value={newTitle} onChange={(e) => setNewTitle(e.currentTarget.value)} /></label>
+              <label className="ws-field"><span>Instruction</span><textarea aria-label="New rule body" value={newBody} onChange={(e) => setNewBody(e.currentTarget.value)} /></label>
+              <div className="governance-actions">
+                <button className="pill" onClick={() => { setAddingRule(false); setNewTitle(""); setNewBody(""); }}>Cancel</button>
+                <button className="pill primary" disabled={!newTitle.trim()} onClick={() => void addLibraryRule()}>Add rule</button>
               </div>
-            ))}
-            {addingCustom ? (
-              <div className="gov-rule-card">
-                <label className="ws-field">
-                  <span>Custom rule title</span>
-                  <input
-                    aria-label="Custom rule title"
-                    value={customTitle}
-                    onChange={(e) => setCustomTitle(e.currentTarget.value)}
-                  />
-                </label>
-                <label className="ws-field">
-                  <span>Instruction</span>
-                  <textarea
-                    aria-label="Custom rule body"
-                    value={customBody}
-                    onChange={(e) => setCustomBody(e.currentTarget.value)}
-                  />
-                </label>
-                <div className="governance-actions">
-                  <button
-                    className="pill"
-                    onClick={() => {
-                      setAddingCustom(false);
-                      setCustomTitle("");
-                      setCustomBody("");
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="pill"
-                    disabled={!customTitle.trim()}
-                    onClick={addCustomRule}
-                  >
-                    Add custom rule
-                  </button>
+            </div>
+          ) : (
+            <button className="pill primary" onClick={() => setAddingRule(true)}>+ Add rule</button>
+          )}
+          {!global && (
+            <>
+              {customRules().length > 0 && <p className="gov-subhead">Custom rules for this agent</p>}
+              {customRules().map((rule) => (
+                <div className="gov-rule-card" key={rule.id}>
+                  <strong>{rule.title}</strong>
+                  {rule.body && <p className="governance-pre">{rule.body}</p>}
+                  <div className="governance-actions">
+                    <button className="pill danger" onClick={() => removeCustomRule(rule.id)}>Remove</button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <button className="pill" onClick={() => setAddingCustom(true)}>
-                + Add custom rule
-              </button>
-            )}
-            <p className="governance-note">
-              {applied().length + customRules().length} rule(s) will be injected
-              into this agent.
-            </p>
-          </>
-        )}
-        {error && (
-          <p className="governance-error" role="alert">
-            {error}
-          </p>
-        )}
-        {saved && (
-          <p className="governance-success" role="status">
-            Saved.
-          </p>
-        )}
-        <div className="governance-actions">
-          <button className="pill" onClick={onClose}>
-            Close
-          </button>
-          <button
-            className="pill primary"
-            disabled={saving}
-            onClick={() => void save()}
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
+              ))}
+              {addingCustom ? (
+                <div className="gov-rule-card">
+                  <label className="ws-field"><span>Custom rule title</span><input aria-label="Custom rule title" value={customTitle} onChange={(e) => setCustomTitle(e.currentTarget.value)} /></label>
+                  <label className="ws-field"><span>Instruction</span><textarea aria-label="Custom rule body" value={customBody} onChange={(e) => setCustomBody(e.currentTarget.value)} /></label>
+                  <div className="governance-actions">
+                    <button className="pill" onClick={() => { setAddingCustom(false); setCustomTitle(""); setCustomBody(""); }}>Cancel</button>
+                    <button className="pill" disabled={!customTitle.trim()} onClick={addCustomRule}>Add custom rule</button>
+                  </div>
+                </div>
+              ) : (
+                <button className="pill" onClick={() => setAddingCustom(true)}>+ Add custom rule</button>
+              )}
+            </>
+          )}
+        </section>
+
+        {error && <p className="governance-error" role="alert">{error}</p>}
+        {saved && <p className="governance-success" role="status">Saved.</p>}
+
+        <div className="governance-actions gov-footer">
+          {!global && <span className="gov-count">{applied().length + customRules().length} rule(s) applied to this agent</span>}
+          <button className="pill" onClick={onClose}>Close</button>
+          <button className="pill primary" disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : "Save"}</button>
         </div>
       </section>
     </div>
