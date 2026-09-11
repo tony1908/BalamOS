@@ -48,6 +48,7 @@ describe("GovernancePanel", () => {
     render(
       <GovernancePanel open onClose={vi.fn()} workspaceId="w1" api={fake} />,
     );
+    await user.click(await screen.findByRole("button", { name: "+ Add rule" }));
     await user.type(
       await screen.findByLabelText("New rule title"),
       "No deploys",
@@ -71,6 +72,9 @@ describe("GovernancePanel", () => {
     const user = userEvent.setup();
     render(
       <GovernancePanel open onClose={vi.fn()} workspaceId="w1" api={fake} />,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "+ Add custom rule" }),
     );
     await user.type(
       await screen.findByLabelText("Custom rule title"),

@@ -38,6 +38,8 @@ export function GovernancePanel({
     [editBody, setEditBody] = useState(""),
     [customTitle, setCustomTitle] = useState(""),
     [customBody, setCustomBody] = useState("");
+  const [addingRule, setAddingRule] = useState(false);
+  const [addingCustom, setAddingCustom] = useState(false);
   const generation = useRef(0),
     dialogRef = useRef<HTMLElement>(null);
 
@@ -87,6 +89,7 @@ export function GovernancePanel({
       await api.createRule(newTitle.trim(), newBody);
       setNewTitle("");
       setNewBody("");
+      setAddingRule(false);
       setReload((r) => r + 1);
     } catch (e) {
       setError(message(e));
@@ -134,6 +137,7 @@ export function GovernancePanel({
     setDraft((d) => ({ ...d, custom_rules: [...customRules(), rule] }));
     setCustomTitle("");
     setCustomBody("");
+    setAddingCustom(false);
     setSaved(false);
   };
   const removeCustomRule = (id: string) => {
@@ -294,33 +298,49 @@ export function GovernancePanel({
             )}
           </div>
         ))}
-        <div className="gov-rule-card">
-          <label className="ws-field">
-            <span>New rule title</span>
-            <input
-              aria-label="New rule title"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.currentTarget.value)}
-            />
-          </label>
-          <label className="ws-field">
-            <span>Instruction</span>
-            <textarea
-              aria-label="New rule body"
-              value={newBody}
-              onChange={(e) => setNewBody(e.currentTarget.value)}
-            />
-          </label>
-          <div className="governance-actions">
-            <button
-              className="pill primary"
-              disabled={!newTitle.trim()}
-              onClick={() => void addLibraryRule()}
-            >
-              Add rule
-            </button>
+        {addingRule ? (
+          <div className="gov-rule-card">
+            <label className="ws-field">
+              <span>New rule title</span>
+              <input
+                aria-label="New rule title"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.currentTarget.value)}
+              />
+            </label>
+            <label className="ws-field">
+              <span>Instruction</span>
+              <textarea
+                aria-label="New rule body"
+                value={newBody}
+                onChange={(e) => setNewBody(e.currentTarget.value)}
+              />
+            </label>
+            <div className="governance-actions">
+              <button
+                className="pill"
+                onClick={() => {
+                  setAddingRule(false);
+                  setNewTitle("");
+                  setNewBody("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="pill primary"
+                disabled={!newTitle.trim()}
+                onClick={() => void addLibraryRule()}
+              >
+                Add rule
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <button className="pill primary" onClick={() => setAddingRule(true)}>
+            + Add rule
+          </button>
+        )}
         {!global && (
           <>
             <h3>Applied to this agent</h3>
@@ -348,33 +368,49 @@ export function GovernancePanel({
                 </div>
               </div>
             ))}
-            <div className="gov-rule-card">
-              <label className="ws-field">
-                <span>Custom rule title</span>
-                <input
-                  aria-label="Custom rule title"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.currentTarget.value)}
-                />
-              </label>
-              <label className="ws-field">
-                <span>Instruction</span>
-                <textarea
-                  aria-label="Custom rule body"
-                  value={customBody}
-                  onChange={(e) => setCustomBody(e.currentTarget.value)}
-                />
-              </label>
-              <div className="governance-actions">
-                <button
-                  className="pill"
-                  disabled={!customTitle.trim()}
-                  onClick={addCustomRule}
-                >
-                  Add custom rule
-                </button>
+            {addingCustom ? (
+              <div className="gov-rule-card">
+                <label className="ws-field">
+                  <span>Custom rule title</span>
+                  <input
+                    aria-label="Custom rule title"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.currentTarget.value)}
+                  />
+                </label>
+                <label className="ws-field">
+                  <span>Instruction</span>
+                  <textarea
+                    aria-label="Custom rule body"
+                    value={customBody}
+                    onChange={(e) => setCustomBody(e.currentTarget.value)}
+                  />
+                </label>
+                <div className="governance-actions">
+                  <button
+                    className="pill"
+                    onClick={() => {
+                      setAddingCustom(false);
+                      setCustomTitle("");
+                      setCustomBody("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="pill"
+                    disabled={!customTitle.trim()}
+                    onClick={addCustomRule}
+                  >
+                    Add custom rule
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <button className="pill" onClick={() => setAddingCustom(true)}>
+                + Add custom rule
+              </button>
+            )}
             <p className="governance-note">
               {applied().length + customRules().length} rule(s) will be injected
               into this agent.
