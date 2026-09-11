@@ -1,0 +1,7 @@
+{
+  "name": "@balamos/graph-mcp",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "bin": { "balamos-graph-mcp": "src/server.mjs" }
+}
