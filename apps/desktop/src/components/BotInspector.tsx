@@ -13,6 +13,7 @@ import { SkillsPanel } from "./SkillsPanel";
 import { templateApi } from "../api/templates";
 import { routineApi } from "../api/routines";
 import { skillApi } from "../api/skills";
+import { agentApi } from "../api/agents";
 import { workspaceApi } from "../api/workspaces";
 import {
   CUSTOM_MODEL,
@@ -48,6 +49,7 @@ export function BotInspector({
   const [sharing, setSharing] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [shared, setShared] = useState(false);
+  const [controlling, setControlling] = useState(false);
   const { settings, update } = botSettings;
   const screenName = settings.displayName || workspace.name;
 
@@ -370,6 +372,21 @@ export function BotInspector({
           <span className="live-dot">
             <i aria-hidden="true" /> Live desktop
           </span>
+          {controlling ? (
+            <button className="pill" onClick={() => setControlling(false)}>
+              Hand back to agent
+            </button>
+          ) : (
+            <button
+              className="pill"
+              onClick={() => {
+                setControlling(true);
+                void agentApi.interrupt(workspace.id).catch(() => {});
+              }}
+            >
+              Take control
+            </button>
+          )}
         </div>
         <div
           className={`screen-stage${expanded ? " expanded" : ""}`}
@@ -387,12 +404,15 @@ export function BotInspector({
               <DesktopView
                 workspaceId={workspace.id}
                 createSession={createDesktopSession}
+                controllable={controlling}
               />
             </div>
           </div>
         </div>
         <p className="screen-hint">
-          Read-only preview. Use Expand for a larger view.
+          {controlling
+            ? "You're driving the desktop — the agent is paused. Hand back when you're done."
+            : "Read-only preview. Use Expand for a larger view."}
         </p>
       </div>
     </div>

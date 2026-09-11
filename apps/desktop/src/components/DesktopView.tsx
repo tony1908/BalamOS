@@ -7,11 +7,13 @@ type ViewState =
 type Props = {
   workspaceId: string;
   createSession?: (id: string) => Promise<DesktopSession>;
+  controllable?: boolean;
 };
 
 export default function DesktopView({
   workspaceId,
   createSession = workspaceApi.createDesktopSession,
+  controllable = false,
 }: Props) {
   const [displayed, setDisplayed] = useState<DesktopSession | null>(null);
   const [state, setState] = useState<ViewState>("frame_loading");
@@ -113,8 +115,12 @@ export default function DesktopView({
           />
           {/* ponytail: client-side block; server-side upgrade is KasmVNC's
               view_only URL param in the daemon's desktop-session URL. */}
-          <div className="desktop-guard" aria-hidden="true" />
-          <span className="desktop-viewonly">View only</span>
+          {!controllable && (
+            <div className="desktop-guard" aria-hidden="true" />
+          )}
+          <span className="desktop-viewonly">
+            {controllable ? "You're in control" : "View only"}
+          </span>
           {connecting && (
             <div className="desktop-connecting" role="status">
               Connecting to the desktop…
