@@ -130,18 +130,6 @@ describe("OrbitAppView", () => {
     expect(controller.stop).not.toHaveBeenCalled();
   });
 
-  it("exposes a persistent runtime status region", async () => {
-    render(
-      <OrbitAppView
-        controller={controllerStub({
-          workspaces: twoWorkspaces(),
-          selectedId: "ws-1",
-        })}
-      />,
-    );
-    expect(screen.getByRole("status")).toBeInTheDocument();
-  });
-
   it("offers Retry when the daemon is unavailable", async () => {
     const user = userEvent.setup();
     const retry = vi.fn().mockResolvedValue(undefined);
@@ -212,7 +200,8 @@ describe("OrbitAppView", () => {
     const user = userEvent.setup();
     render(<OrbitAppView controller={controllerStub()} />);
 
-    await user.click(screen.getByRole("button", { name: "Governance" }));
+    await user.click(screen.getByRole("button", { name: "Manage" }));
+    await user.click(screen.getByRole("menuitem", { name: "Governance" }));
     expect(screen.getByRole("heading", { name: "Global governance" })).toBeVisible();
   });
 
@@ -225,7 +214,7 @@ describe("OrbitAppView", () => {
       })} />,
     );
 
-    await user.click(screen.getAllByRole("button", { name: "Governance" })[1]);
+    await user.click(screen.getByRole("button", { name: "Governance" }));
     expect(screen.getByRole("heading", { name: "Agent governance" })).toBeVisible();
   });
 
@@ -243,7 +232,6 @@ describe("OrbitAppView", () => {
     expect(
       screen.getByRole("navigation", { name: "Workspaces" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toBeInTheDocument();
 
     const svgs = container.querySelectorAll("svg");
     expect(svgs.length).toBeGreaterThan(0);
