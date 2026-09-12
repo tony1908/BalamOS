@@ -1635,3 +1635,51 @@ button {
 .sysline-paused {
   color: var(--wait);
 }
+
+.sb-manage {
+  position: relative;
+  padding: 8px;
+  border-top: 1px solid var(--line);
+}
+.sb-manage-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sb-manage-btn:hover,
+.sb-manage-btn.on {
+  background: var(--raise);
+  color: var(--text);
+}
+.sb-manage-menu {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% - 2px);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--raise-2);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.8);
+  z-index: 40;
+}
+.sb-manage-item {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.sb-manage-item:hover {
+  background: var(--sel);
+  color: var(--text);
+}

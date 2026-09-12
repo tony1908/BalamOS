@@ -19,14 +19,6 @@ import { PluginsHub } from "./components/PluginsHub";
 // workspace is an agent you chat with, plus a live OS pane you can reveal. The
 // presentation is now backed entirely by the real workspace controller.
 
-function runtimeLabel(controller: WorkspaceController): string {
-  const { runtime, runtimeLoading } = controller;
-  if (!runtime) return runtimeLoading ? "Connecting…" : "Daemon unavailable";
-  if (!runtime.available) return runtime.message;
-  if (!runtime.mutations_ready) return "Reconciling…";
-  return "Daemon ready";
-}
-
 export default function App() {
   return <OrbitAppView controller={useWorkspaces()} />;
 }
@@ -62,6 +54,8 @@ export function OrbitAppView({
   const [secretsOpen, setSecretsOpen] = useState(false);
   const [hederaOpen, setHederaOpen] = useState(false);
   const [pluginsOpen, setPluginsOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const manageRef = useRef<HTMLDivElement>(null);
   const [selectedAgentState, setSelectedAgentState] = useState<
     AgentSessionState | undefined
   >(undefined);
@@ -77,6 +71,15 @@ export function OrbitAppView({
   }, [dialogOpen]);
 
   useEffect(() => setSelectedAgentState(undefined), [selectedId]);
+
+  useEffect(() => {
+    if (!manageOpen) return;
+    const onDown = (event: MouseEvent) => {
+      if (manageRef.current && !manageRef.current.contains(event.target as Node)) setManageOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [manageOpen]);
 
   const selected = workspaces.find((row) => row.id === selectedId) ?? null;
   useAgentNotifications(
@@ -100,7 +103,6 @@ export function OrbitAppView({
   const list = workspaces.filter((row) =>
     `${row.name} ${row.host_path}`.toLowerCase().includes(needle),
   );
-  const daemonAvailable = runtime?.available === true;
   const osVisible = showOs && selected?.state === "running";
 
   return (
@@ -175,23 +177,26 @@ export function OrbitAppView({
             )}
           </nav>
 
-          <div className="sb-foot" role="status" aria-label="Daemon status">
-            <span
-              className={`rt-dot ${
-                daemonAvailable ? (mutationsReady ? "ok" : "warn") : "bad"
-              }`}
-            />
-            <span className="rt-label">{runtimeLabel(controller)}</span>
-            {runtime && !runtime.available && (
-              <button className="rt-retry" onClick={() => void retry()}>
-                Retry
-              </button>
+          <div className="sb-manage" ref={manageRef}>
+            {manageOpen && (
+              <div className="sb-manage-menu" role="menu">
+                <button role="menuitem" className="sb-manage-item" onClick={() => { setManageOpen(false); setSecretsOpen(true); }}>Secrets</button>
+                <button role="menuitem" className="sb-manage-item" onClick={() => { setManageOpen(false); setPluginsOpen(true); }}>Plugins</button>
+                <button role="menuitem" className="sb-manage-item" onClick={() => { setManageOpen(false); setGovernanceOpen(true); }}>Governance</button>
+              </div>
             )}
-          </div>
-          <div className="sb-governance">
-            <button className="plugins-toggle" onClick={() => setSecretsOpen(true)}>Secrets</button>
-            <button className="plugins-toggle" onClick={() => setPluginsOpen(true)}>Plugins</button>
-            <button className="plugins-toggle" onClick={() => setGovernanceOpen(true)}>Governance</button>
+            <button
+              className={`sb-manage-btn ${manageOpen ? "on" : ""}`}
+              aria-haspopup="menu"
+              aria-expanded={manageOpen}
+              onClick={() => setManageOpen((open) => !open)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              Manage
+            </button>
           </div>
         </aside>
 
