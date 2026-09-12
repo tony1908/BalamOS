@@ -2,14 +2,14 @@
 
 BalamOS: the Grok-bot-of-crypto. This maps each target track to **what to look at**, **how it qualifies**, and its **honest status**. Run the demos from the [README](../README.md) quickstart.
 
-**Verified now:** `pnpm test:packages` (21 tests) · `bash scripts/demo-x402.sh` · `bash scripts/demo-recipe.sh` · desktop suite 166/166.
+**Verified now:** `pnpm test:packages` (31 tests) · `bash scripts/demo-x402.sh` (discovery, no secrets) · `HEDERA_KEY_FILE=… bash scripts/demo-x402.sh` (**real on-chain HBAR settlement on Hedera testnet**) · `bash scripts/demo-recipe.sh` · desktop suite 166/166.
 
 ---
 
 ## Hedera — AI & Agentic Payments ($6k)
 - **Ask:** an agent discovers and pays an x402-gated service on Hedera, no API keys.
-- **Look at:** `packages/balamos-x402/` (client), `packages/x402-demo-service/` (a Hedera-scheme x402 endpoint), `scripts/demo-x402.sh`.
-- **Status:** ✅ **discovery live-verified** — the agent inspects the endpoint and reads real payment terms (amount, HBAR/HTS asset, network, payTo) with no key. ⛔ **on-chain settlement designed, not built** — see `docs/plans/2026-09-10-x402-settlement-design.md`; needs a funded Hedera wallet. The demo's paid path is an explicit mock.
+- **Look at:** `packages/balamos-x402/` (client `inspect` + `pay`), `packages/hedera-readonly/src/settle.mjs` (HBAR settlement), `packages/x402-demo-service/` (a Hedera x402 endpoint that verifies on-chain), `scripts/demo-x402.sh`.
+- **Status:** ✅ **discovery + on-chain settlement live-verified on Hedera testnet.** `balamos-x402 pay <url>` inspects the endpoint (no key), gates the amount against a governance spend cap, signs and submits a real HBAR transfer from the agent wallet to `payTo`, then re-requests with an `X-PAYMENT` proof; the service **verifies the transfer against the public mirror node** (no key) before returning the resource. No mock. Example settlement: [`0.0.10512454@1789257195…`](https://hashscan.io/testnet/transaction/0.0.10512454@1789257195.006019834). Custody stays with the user (operator key funds the wallet, never enters the repo/logs/prompts). Remaining polish: surface the spend cap in the in-app Governance panel and route settlement through the daemon state machine — see `docs/plans/2026-09-10-x402-settlement-design.md`.
 
 ## Hedera — Improve the Hedera Harness ($2k)
 - **Ask:** extend the Hedera harness / improve DX / add service coverage.
@@ -40,4 +40,4 @@ BalamOS: the Grok-bot-of-crypto. This maps each target track to **what to look a
 ---
 
 ## Blocked on external inputs
-Funded Hedera wallet (settlement) · `GRAPH_API_KEY` (live Graph proof) · Circle creds + Arc deploy (Circle bonus) · Docker + memory (image rebuild, app run, **video demo**).
+Circle creds + Arc deploy (Circle bonus) · Docker + memory (image rebuild, app run, **video demo**). *(Resolved: funded Hedera testnet wallet — settlement now live; `GRAPH_API_KEY` — Graph track live-verified.)*

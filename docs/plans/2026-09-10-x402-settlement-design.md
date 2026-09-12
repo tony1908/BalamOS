@@ -1,6 +1,16 @@
-# x402 Settlement Layer — Design (ready to build)
+# x402 Settlement Layer — Design
 
-**Status:** designed, not built. Blocked only on a funded Hedera wallet + confirming `@x402/hedera` payload field names. Everything else reuses code we already have.
+**Status (2026-09-12): BUILT & live-verified on Hedera testnet.** `balamos-x402 pay <url>` settles real HBAR to `payTo` and the demo service verifies it on the mirror node before serving the resource (example: [`0.0.10512454@1789257195…`](https://hashscan.io/testnet/transaction/0.0.10512454@1789257195.006019834)). Implemented as the lazy slice below:
+- `packages/hedera-readonly/src/settle.mjs` — direct operator-signed testnet/mainnet HBAR transfer (`settleHbarTransfer`).
+- `packages/balamos-x402/src/cli.mjs` — `pay`: inspect → select `exact` requirement → **governance spend cap** (`X402_MAX_TINYBARS`, default 1 HBAR) → settle → re-request with `X-PAYMENT` proof.
+- `packages/x402-demo-service/` — `verify.mjs` verifies the transfer to `payTo` on the public mirror node (no key), with retry for indexing lag; the mock paid path is gone.
+- `scripts/demo-x402.sh` — discovery always; real settlement when `HEDERA_KEY_FILE` is set.
+
+**Deferred polish (not required for the working demo):** move settlement into the `orbit-daemon` state machine, surface the spend cap in the in-app Governance panel, and add HTS-USDC alongside HBAR. The rest of this doc is the original design for that fuller build.
+
+---
+
+**Original design.** Everything else reuses code we already have.
 
 ## Goal
 

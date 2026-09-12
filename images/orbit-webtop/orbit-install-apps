@@ -103,6 +103,15 @@ install_balamos_x402() {
     log "balamos-x402 helper: canonical package payload is missing"
     return 1
   fi
+  # `pay` lazily imports @balamos/hedera-readonly for HBAR settlement. Mirror the pnpm
+  # workspace link so the specifier resolves to the installed hedera helper (and its SDK).
+  # `ready`/`inspect` do not need it, so a missing link (e.g. observe profile) is harmless.
+  if [ -d /opt/balamos/hedera/src ]; then
+    mkdir -p "$dir/node_modules/@balamos"
+    ln -sfn /opt/balamos/hedera "$dir/node_modules/@balamos/hedera-readonly"
+  else
+    log "balamos-x402 helper: hedera link unavailable; pay (settlement) will be disabled"
+  fi
   cat >"$bin" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
