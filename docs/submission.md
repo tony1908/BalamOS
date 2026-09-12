@@ -20,7 +20,7 @@ BalamOS: the Grok-bot-of-crypto. This maps each target track to **what to look a
 ## The Graph — Best AI Tooling ($5k)
 - **Ask:** AI agents querying Subgraphs via MCP; portfolio/trading agents.
 - **Look at:** `packages/balamos-graph/` (CLI), `packages/balamos-graph-mcp/` (**MCP server**, `query_subgraph` tool), `scripts/demo-mcp.sh`, and the container auto-wiring (`images/orbit-webtop/opencode/opencode.json`).
-- **Status:** ✅ built + unit-tested (CLI 5/5, MCP 7/7). ✅ **MCP server verified connecting to a real opencode install** (`opencode mcp list` → connected) and auto-wired into the container's opencode config, so the agent gets `query_subgraph` natively. ⚠️ **not yet run against a live Subgraph** — set `GRAPH_API_KEY` to verify real-data queries.
+- **Status:** ✅ built + unit-tested (CLI 5/5, MCP 7/7). ✅ **MCP server verified connecting to a real opencode install** (`opencode mcp list` → connected) and auto-wired into the container's opencode config, so the agent gets `query_subgraph` natively. ✅ **verified live against a real Subgraph** (returned the current Ethereum block) through both the CLI and the MCP `query_subgraph` tool, using a Subgraph Studio API key supplied as `GRAPH_API_KEY`.
 
 ## Bazantic — combine 2+ APIs ($3k)
 - **Ask:** one workflow combining 2+ APIs that neither solves alone.
