@@ -3,28 +3,29 @@ set -euo pipefail
 
 # demo-recipe.sh
 #
-# BalamOS "recipe": combine TWO capabilities into ONE agent decision that
-# neither tool makes alone.
+# BalamOS "recipe": combine TWO capabilities into ONE agent decision + action
+# that neither tool makes alone (Bazantic "combine 2+ APIs" track).
 #
-#   * balamos-x402 client  -> discover the price of a paid data feed (x402)
-#   * balamos-graph reader -> fetch on-chain context (The Graph)
+#   * The Graph (balamos-graph) -> on-chain context (price/liquidity/volume)
+#   * x402 (balamos-x402)        -> discover a paid feed's price, then, if it
+#                                   clears the governance cap, SETTLE it on
+#                                   Hedera (a real HBAR transfer) and unlock it.
 #
-# The composed question: "Given the cost of a paid data feed (x402) and the
-# on-chain context (The Graph), should the agent buy it?"
+# Composed question: "Given on-chain context (The Graph) and the cost of a paid
+# feed (x402), should the agent buy it -- and if so, pay for it?"
 #
-# This is the Bazantic "combine 2+ APIs" track. The x402 step uses the local
-# demo service and always runs. The Graph step runs live only if GRAPH_API_KEY
-# is set; otherwise it is skipped without failing.
-#
-# Safe to run repeatedly. Requires no secrets (the Graph step is optional).
+# STEP 4 settles for real only when HEDERA_KEY_FILE points at a funded Hedera
+# testnet wallet; otherwise it stops at the buy decision. The Graph step runs
+# live only if GRAPH_API_KEY (and GRAPH_SUBGRAPH) are set. Safe to run repeatedly.
 
 cd "$(dirname "$0")/.."
 
 PORT="${PORT:-4021}"
 X402_ASSET="${X402_ASSET:-HBAR}"
-X402_AMOUNT="${X402_AMOUNT:-10000000}"
-X402_PAY_TO="${X402_PAY_TO:-0.0.4567}"
-X402_NETWORK="${X402_NETWORK:-hedera-mainnet}"
+X402_AMOUNT="${X402_AMOUNT:-1000000}"                 # 0.01 HBAR in tinybars
+X402_PAY_TO="${X402_PAY_TO:-0.0.10512599}"
+X402_NETWORK="${X402_NETWORK:-hedera-testnet}"
+X402_MAX_TINYBARS="${X402_MAX_TINYBARS:-100000000}"   # governance cap, 1 HBAR
 
 GRAPH_API_KEY="${GRAPH_API_KEY:-}"
 GRAPH_SUBGRAPH="${GRAPH_SUBGRAPH:-}"
@@ -43,7 +44,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "Starting x402 demo service..."
+echo "Starting x402 demo service (${X402_NETWORK}, pay-to ${X402_PAY_TO})..."
 PORT="$PORT" \
 X402_ASSET="$X402_ASSET" \
 X402_AMOUNT="$X402_AMOUNT" \
@@ -54,67 +55,59 @@ SERVER_PID=$!
 
 SERVICE_UP=0
 for _ in $(seq 1 20); do
-  if node "$X402_CLI" inspect "${BASE_URL}/" >/dev/null 2>&1; then
+  if node "$X402_CLI" inspect "${BASE_URL}/feed" >/dev/null 2>&1; then
     SERVICE_UP=1
     break
   fi
   sleep 0.3
 done
-
 if [ "$SERVICE_UP" -ne 1 ]; then
   echo "ERROR: x402 demo service did not become ready at ${BASE_URL}" >&2
   exit 1
 fi
 
 echo
-echo "STEP 1 — x402: discovering the price of the paid feed..."
-X402_JSON="$(node "$X402_CLI" inspect "${BASE_URL}/")"
-
-X402_FIELDS="$(printf '%s' "$X402_JSON" | python3 -c '
-import json, sys
-data = json.load(sys.stdin)
-accepts = data.get("accepts") or []
-req = accepts[0] if accepts else {}
-for key in ("maxAmountRequired", "asset", "payTo", "network"):
-    print(req.get(key, "unknown"))
-' 2>/dev/null || true)"
-
-if [ -z "$X402_FIELDS" ]; then
-  echo "ERROR: could not parse x402 payment requirements" >&2
-  exit 1
-fi
-
-AMOUNT="$(printf '%s\n' "$X402_FIELDS" | sed -n '1p')"
-ASSET="$(printf '%s\n' "$X402_FIELDS" | sed -n '2p')"
-PAY_TO="$(printf '%s\n' "$X402_FIELDS" | sed -n '3p')"
-NETWORK="$(printf '%s\n' "$X402_FIELDS" | sed -n '4p')"
-
-echo "STEP 1 — x402: the paid feed costs ${AMOUNT} ${ASSET} (payTo ${PAY_TO}, network ${NETWORK})."
-
-echo
-echo "STEP 2 — The Graph: fetching on-chain context..."
+echo "STEP 1 - The Graph: on-chain context..."
 if [ -n "$GRAPH_API_KEY" ]; then
-  if GRAPH_READY="$(node "$GRAPH_CLI" ready 2>/dev/null)"; then
-    READY_FLAG="$(printf '%s' "$GRAPH_READY" | python3 -c 'import json,sys; print("ready" if json.load(sys.stdin).get("ready") else "not ready")' 2>/dev/null || echo "unknown")"
-    echo "  Graph helper: ${READY_FLAG}."
-  else
-    echo "  Graph helper: not ready."
-  fi
-  if [ -n "$GRAPH_SUBGRAPH" ] && [ -n "$GRAPH_QUERY" ]; then
-    echo "  Sample query (best-effort, live):"
+  if [ -n "$GRAPH_SUBGRAPH" ]; then
     if GRAPH_RESULT="$(node "$GRAPH_CLI" query "$GRAPH_SUBGRAPH" "$GRAPH_QUERY" 2>/dev/null)"; then
-      echo "    received on-chain context: $(printf '%s' "$GRAPH_RESULT" | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin))[:160])' 2>/dev/null || echo "ok")"
+      echo "  context: $(printf '%s' "$GRAPH_RESULT" | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin))[:200])' 2>/dev/null || echo ok)"
     else
-      echo "    sample query did not return data — continuing without it."
+      echo "  Graph query returned no data - continuing without it."
     fi
+  else
+    echo "  GRAPH_SUBGRAPH not set - set it (and GRAPH_QUERY) for a live read."
   fi
 else
-  echo "  GRAPH_API_KEY not set — skipping live Graph read; in production the agent fetches portfolio/price context here."
+  echo "  GRAPH_API_KEY not set - in production the agent reads price/liquidity context here."
 fi
 
 echo
-echo "STEP 3 — Recipe decision:"
-echo "  The feed costs ${AMOUNT} ${ASSET}. With on-chain context, the agent decides buy/skip against its governance budget — a call neither the price API nor the data API makes alone."
+echo "STEP 2 - x402: discovering the paid feed's price..."
+X402_JSON="$(node "$X402_CLI" inspect "${BASE_URL}/feed")"
+AMOUNT="$(printf '%s' "$X402_JSON" | python3 -c 'import json,sys; a=(json.load(sys.stdin).get("accepts") or [{}])[0]; print(a.get("maxAmountRequired") or a.get("amount") or "")' 2>/dev/null || true)"
+if [ -z "$AMOUNT" ]; then echo "ERROR: could not read the x402 price" >&2; exit 1; fi
+echo "  the feed costs ${AMOUNT} tinybars (${X402_ASSET}) to ${X402_PAY_TO} on ${X402_NETWORK}."
 
 echo
-echo "Settlement is the next layer: a governance-gated wallet signs and settles the x402 payment only after the buy decision."
+echo "STEP 3 - Recipe decision (the combined call):"
+if [ "$AMOUNT" -le "$X402_MAX_TINYBARS" ]; then
+  DECISION="buy"
+  echo "  ${AMOUNT} <= cap ${X402_MAX_TINYBARS} tinybars -> BUY. (Neither the price API nor the data API makes this call alone.)"
+else
+  DECISION="skip"
+  echo "  ${AMOUNT} > cap ${X402_MAX_TINYBARS} tinybars -> SKIP."
+fi
+
+echo
+if [ "$DECISION" = "buy" ] && [ -n "${HEDERA_KEY_FILE:-}" ]; then
+  echo "STEP 4 - x402 settlement on Hedera (REAL):"
+  HEDERA_KEY_FILE="$HEDERA_KEY_FILE" X402_MAX_TINYBARS="$X402_MAX_TINYBARS" \
+    node "$X402_CLI" pay "${BASE_URL}/feed" | (python3 -m json.tool 2>/dev/null || cat)
+elif [ "$DECISION" = "buy" ]; then
+  echo "STEP 4 - settlement skipped (no wallet). Set HEDERA_KEY_FILE to a funded"
+  echo "  Hedera testnet wallet to settle for real:"
+  echo "    HEDERA_KEY_FILE=/path/to/wallet.json bash scripts/demo-recipe.sh"
+else
+  echo "STEP 4 - no purchase (decision was skip)."
+fi
