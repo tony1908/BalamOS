@@ -1,0 +1,8 @@
+{
+  "name": "@balamos/hedera-readonly",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "bin": { "balamos-hedera-readonly": "src/cli.mjs", "balamos-hedera-transfer": "src/agent-cli.mjs" },
+  "dependencies": { "@hashgraph/hedera-agent-kit": "4.1.0", "@hiero-ledger/proto": "2.31.0", "@hiero-ledger/sdk": "2.86.2" }
+}
