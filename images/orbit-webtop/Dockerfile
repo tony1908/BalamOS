@@ -27,6 +27,27 @@ RUN install -d -m 0755 /etc/apt/keyrings \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends firefox \
     && rm -rf /var/lib/apt/lists/*
 
+# Foundry (forge/cast/anvil): EVM/Arc reads, calls, sends, and local-fork tx
+# simulation from the terminal. foundryup fetches cross-arch prebuilt binaries.
+ENV FOUNDRY_DIR=/opt/foundry
+RUN curl -fsSL https://foundry.paradigm.xyz | bash \
+    && /opt/foundry/bin/foundryup \
+    && ln -sf /opt/foundry/bin/forge /opt/foundry/bin/cast /opt/foundry/bin/anvil /usr/local/bin/ \
+    && chmod -R a+rx /opt/foundry
+
+# Chromium hosts the wallet extensions (MetaMask, HashPack) via the managed
+# ExtensionInstallForcelist policy below. The base's own `chromium` apt package
+# is a container-hostile snap, so we use xtradeb, which ships real Chromium debs
+# for both amd64 and arm64 on Ubuntu.
+# ponytail: this line is arch-sensitive and unverified until the image rebuild —
+# if xtradeb lacks chromium for the build's Ubuntu release/arch, swap the source here.
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && apt-get install -y --no-install-recommends software-properties-common \
+    && add-apt-repository -y ppa:xtradeb/apps \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends chromium \
+    && rm -rf /var/lib/apt/lists/*
+
 # Pin a fixed, roomy desktop resolution so Selkies does not shrink the OS to the
 # small preview iframe (agent screenshots + click coordinates stay stable).
 ENV SELKIES_IS_MANUAL_RESOLUTION_MODE=true \
@@ -49,6 +70,11 @@ COPY packages/balamos-x402/package.json /opt/balamos/x402-src/package.json
 COPY packages/balamos-x402/src/ /opt/balamos/x402-src/src/
 COPY packages/balamos-graph-mcp/package.json /opt/balamos/graph-mcp-src/package.json
 COPY packages/balamos-graph-mcp/src/ /opt/balamos/graph-mcp-src/src/
+COPY packages/balamos-treasury/package.json /opt/balamos/treasury-src/package.json
+COPY packages/balamos-treasury/src/ /opt/balamos/treasury-src/src/
+# Force-install the wallet extensions in Chromium (and Chrome, if present).
+COPY images/orbit-webtop/chrome/policies/managed/balamos-wallets.json /etc/chromium/policies/managed/balamos-wallets.json
+COPY images/orbit-webtop/chrome/policies/managed/balamos-wallets.json /etc/opt/chrome/policies/managed/balamos-wallets.json
 RUN chmod 0755 /usr/local/bin/orbitctl \
     /usr/local/bin/orbit-install-apps \
     /custom-cont-init.d/20-orbit-codex \
@@ -60,4 +86,8 @@ RUN chmod 0755 /usr/local/bin/orbitctl \
     && circle --version | grep -F "${CIRCLE_CLI_VERSION}" \
     && claude --version \
     && gemini --version \
-    && firefox --version
+    && firefox --version \
+    && forge --version \
+    && cast --version \
+    && anvil --version \
+    && chromium --version

@@ -19,6 +19,10 @@ invent numbers — only report values a tool actually returned.
   print the key; never write it to a file.
 - The Graph needs `GRAPH_API_KEY` (also a secret). If missing, say the research step
   will be skipped.
+- `cast`/`anvil` (Foundry) are available for EVM/Arc reads and local-fork simulation.
+- Start the treasury dashboard so the user can watch balances move, then open it in the
+  browser: `TREASURY_ACCOUNTS="$HEDERA_OPERATOR_ID,<payTo>" balamos-treasury &` and open
+  `http://localhost:4030`.
 
 ## 1. Research — The Graph
 
@@ -39,6 +43,12 @@ Compare the cost to the governance cap (`X402_MAX_TINYBARS`, tinybars; 1 HBAR =
 one-line reason. If skip, stop here and report why.
 
 ## 4. Pay — x402 over Hedera (only if "buy")
+
+**Simulate before you spend.** For a Hedera HBAR payment, first confirm the wallet
+balance covers the amount plus fees (via the treasury dashboard or
+`balamos-hedera-readonly`). For any EVM/Arc action, dry-run it on a local fork first:
+`anvil --fork-url <rpc>`, send against the fork with `cast`, inspect the result — only
+then touch the real network.
 
 `balamos-x402 pay <url>`. This signs and submits a real HBAR transfer from the agent
 wallet to `payTo`, gated by the cap, then re-requests with proof and returns the

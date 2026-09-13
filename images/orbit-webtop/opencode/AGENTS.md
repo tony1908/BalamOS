@@ -37,6 +37,24 @@ Read it before driving the GUI. It documents `scrot` screenshots and `xdotool` i
 Query Subgraphs with the `query_subgraph` MCP tool or `balamos-graph query <id>
 '<graphql>'` for on-chain context (price, liquidity, volume). Needs `GRAPH_API_KEY`.
 
+## EVM / Arc (Foundry)
+
+`cast` and `anvil` (Foundry) read/call/send on any EVM chain, including Circle's Arc.
+Before any real EVM spend, simulate on a local fork: `anvil --fork-url <rpc>`, then
+`cast` against the fork. Only send to the real network once the fork run looks right.
+
+## Wallets in the browser
+
+Chromium ships with MetaMask and HashPack force-installed. They need a one-time
+seed/import you must NOT automate — ask the user to take manual desktop control to set
+them up (see the handoff in the crypto-flow skill).
+
+## Treasury dashboard
+
+`balamos-treasury` serves a local balances dashboard at http://localhost:4030 (set
+`TREASURY_ACCOUNTS` to the accounts to watch). Start it and open it so the user can see
+funds move as you transact.
+
 ## Crypto research + pay flow
 
 For "research a token/market and pay for a signal if it's cheap enough" requests,
