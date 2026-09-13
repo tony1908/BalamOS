@@ -51,7 +51,7 @@ install_hedera_readonly() {
 #!/usr/bin/env bash
 set -euo pipefail
 exec node /opt/balamos/hedera/src/cli.mjs "$@"
-  SH
+SH
   chmod 0755 "$bin"
   cat > /usr/local/bin/balamos-hedera-transfer <<'SH'
 #!/usr/bin/env bash
