@@ -2,7 +2,7 @@
 
 BalamOS: the Grok-bot-of-crypto. This maps each target track to **what to look at**, **how it qualifies**, and its **honest status**. Run the demos from the [README](../README.md) quickstart.
 
-**Verified now:** `pnpm test:packages` (31 tests) · `bash scripts/demo-x402.sh` (discovery, no secrets) · `HEDERA_KEY_FILE=… bash scripts/demo-x402.sh` (**real on-chain HBAR settlement on Hedera testnet**) · `bash scripts/demo-recipe.sh` · desktop suite 166/166.
+**Verified now:** `pnpm test:packages` (31 tests) · `bash scripts/demo-x402.sh` (discovery, no secrets) · `HEDERA_KEY_FILE=… bash scripts/demo-x402.sh` (**real on-chain HBAR settlement on Hedera testnet**) · `bash scripts/demo-recipe.sh` · desktop suite 165/165.
 
 ---
 
