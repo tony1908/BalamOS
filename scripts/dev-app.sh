@@ -11,9 +11,33 @@
 #         ORBIT_SOCKET_NAME (default orbit-workspace-daemon)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+REPO_ROOT="$PWD"
 
 DATA_DIR="${ORBIT_DATA_DIR:-.orbit-dev}"
 export ORBIT_SOCKET_NAME="${ORBIT_SOCKET_NAME:-orbit-workspace-daemon}"
+# Dev secrets: unsigned dev binaries can't use the macOS Keychain, so store
+# secrets in local 0600 files under the data dir instead. (Production leaves
+# ORBIT_CREDENTIAL_DIR unset and uses the OS keychain.)
+export ORBIT_CREDENTIAL_DIR="${ORBIT_CREDENTIAL_DIR:-$PWD/$DATA_DIR/credentials}"
+
+# Ensure the canonical workspace package is available without fetching network
+# dependencies during local startup.
+pnpm install --offline --frozen-lockfile --ignore-scripts >/dev/null
+
+# Install a real executable into the daemon's PATH. Do not depend on pnpm's
+# workspace symlinks surviving a container or a different launch directory.
+HELPER_DIR="$PWD/.orbit-dev/bin"
+mkdir -p "$HELPER_DIR"
+HELPER="$HELPER_DIR/balamos-hedera-readonly"
+cat >"$HELPER" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+exec node "$REPO_ROOT/packages/hedera-readonly/src/cli.mjs" "\$@"
+EOF
+chmod 0755 "$HELPER"
+export BALAMOS_HEDERA_HELPER="$HELPER"
+"$HELPER" ready >/dev/null
+echo "Verified Hedera helper: $HELPER"
 
 # The daemon rejects a data dir that others can read; keep it owner-only.
 [ -d "$DATA_DIR" ] && chmod 700 "$DATA_DIR" 2>/dev/null || true

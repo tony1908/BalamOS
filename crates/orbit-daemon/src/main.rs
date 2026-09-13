@@ -133,7 +133,19 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let data_dir = args.data_dir.unwrap_or(default_data_dir()?);
     let token = load_or_create_token(&data_dir)?;
-    let store = Arc::new(WorkspaceStore::open(data_dir.join("orbit.db"))?);
+    // Dev opt-in: when ORBIT_CREDENTIAL_DIR is set, store secrets in local 0600
+    // files instead of the OS keychain (unsigned dev binaries can't use the
+    // macOS Keychain). Unset in production -> the keychain-backed store is used.
+    let store = {
+        let base = WorkspaceStore::open(data_dir.join("orbit.db"))?;
+        match std::env::var("ORBIT_CREDENTIAL_DIR") {
+            Ok(dir) if !dir.trim().is_empty() => base.with_credentials(Arc::new(
+                orbit_store::FileCredentialStore::new(dir.trim())?,
+            )),
+            _ => base,
+        }
+    };
+    let store = Arc::new(store);
     let runtime = Arc::new(DockerCliRuntime::new("docker"));
     let manager = Arc::new(WorkspaceManager::new(store, runtime));
     Daemon::with_lock_path(

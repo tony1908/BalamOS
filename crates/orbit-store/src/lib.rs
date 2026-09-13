@@ -52,6 +52,55 @@ impl CredentialStore for KeyringCredentialStore {
     }
 }
 
+/// A plaintext, file-per-secret credential store for local development, where an
+/// unsigned `cargo run`/`tauri dev` binary cannot use the macOS Keychain. Values
+/// live in `dir/<id>` at 0600. NOT for production — gate it behind an explicit
+/// opt-in (the daemon uses it only when ORBIT_CREDENTIAL_DIR is set).
+pub struct FileCredentialStore {
+    dir: std::path::PathBuf,
+}
+impl FileCredentialStore {
+    pub fn new(dir: impl AsRef<Path>) -> Result<Self, StoreError> {
+        let dir = dir.as_ref().to_path_buf();
+        std::fs::create_dir_all(&dir).map_err(|_| StoreError::Credential)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700));
+        }
+        Ok(Self { dir })
+    }
+    // Secret ids are UUIDs; reject anything that could escape `dir`.
+    fn path(&self, id: &str) -> Result<std::path::PathBuf, StoreError> {
+        if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
+            return Err(StoreError::Credential);
+        }
+        Ok(self.dir.join(id))
+    }
+}
+impl CredentialStore for FileCredentialStore {
+    fn set(&self, id: &str, value: &SecretInput) -> Result<(), StoreError> {
+        let path = self.path(id)?;
+        std::fs::write(&path, value.0.as_bytes()).map_err(|_| StoreError::Credential)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+        }
+        Ok(())
+    }
+    fn get(&self, id: &str) -> Result<String, StoreError> {
+        std::fs::read_to_string(self.path(id)?).map_err(|_| StoreError::Credential)
+    }
+    fn delete(&self, id: &str) -> Result<(), StoreError> {
+        match std::fs::remove_file(self.path(id)?) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(_) => Err(StoreError::Credential),
+        }
+    }
+}
+
 pub struct WorkspaceStore {
     connection: Mutex<Connection>,
     credentials: std::sync::Arc<dyn CredentialStore>,
@@ -114,11 +163,24 @@ impl WorkspaceStore {
                     name TEXT NOT NULL,
                     document TEXT NOT NULL
                 );
-               CREATE TABLE IF NOT EXISTS governance_rules (
+                 CREATE TABLE IF NOT EXISTS governance_rules (
                     id TEXT PRIMARY KEY NOT NULL,
                     title TEXT NOT NULL,
                     body TEXT NOT NULL
-                );
+                 );
+                 CREATE TABLE IF NOT EXISTS hedera_config (
+                     workspace_id TEXT PRIMARY KEY NOT NULL,
+                     source_account_id TEXT NOT NULL,
+                     max_fee_tinybar TEXT NOT NULL,
+                     node_account_id TEXT NOT NULL
+                 );
+                 CREATE TABLE IF NOT EXISTS hbar_intents (
+                     id TEXT PRIMARY KEY NOT NULL,
+                     workspace_id TEXT NOT NULL,
+                     idempotency_key TEXT NOT NULL,
+                     document TEXT NOT NULL,
+                     UNIQUE(workspace_id, idempotency_key)
+                 );
                  CREATE TABLE IF NOT EXISTS secrets (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, env_name TEXT NOT NULL);
                CREATE TABLE IF NOT EXISTS secret_assignments (secret_id TEXT NOT NULL, workspace_id TEXT NOT NULL, agent TEXT NOT NULL, PRIMARY KEY(secret_id, workspace_id, agent));",
         )?;
@@ -132,6 +194,103 @@ impl WorkspaceStore {
     pub fn with_credentials(mut self, credentials: std::sync::Arc<dyn CredentialStore>) -> Self {
         self.credentials = credentials;
         self
+    }
+
+    pub fn save_hedera_config(
+        &self,
+        config: &orbit_protocol::HbarTransferConfig,
+    ) -> Result<(), StoreError> {
+        self.connection.lock().unwrap().execute(
+            "INSERT INTO hedera_config(workspace_id,source_account_id,max_fee_tinybar,node_account_id) VALUES(?1,?2,?3,?4) ON CONFLICT(workspace_id) DO UPDATE SET source_account_id=excluded.source_account_id,max_fee_tinybar=excluded.max_fee_tinybar,node_account_id=excluded.node_account_id",
+            params![config.workspace_id.to_string(), config.source_account_id, config.max_fee_tinybar, config.node_account_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_hedera_config(
+        &self,
+        workspace_id: Uuid,
+    ) -> Result<Option<orbit_protocol::HbarTransferConfig>, StoreError> {
+        self.connection.lock().unwrap().query_row(
+            "SELECT source_account_id,max_fee_tinybar,node_account_id FROM hedera_config WHERE workspace_id=?1",
+            params![workspace_id.to_string()],
+            |r| Ok(orbit_protocol::HbarTransferConfig { workspace_id, source_account_id: r.get(0)?, max_fee_tinybar: r.get(1)?, node_account_id: r.get(2)? }),
+        ).optional().map_err(Into::into)
+    }
+
+    pub fn insert_hbar_intent(
+        &self,
+        intent: &orbit_protocol::HbarTransferIntent,
+    ) -> Result<(), StoreError> {
+        let document = serde_json::to_string(intent)?;
+        self.connection.lock().unwrap().execute(
+            "INSERT INTO hbar_intents(id,workspace_id,idempotency_key,document) VALUES(?1,?2,?3,?4)",
+            params![intent.id.to_string(), intent.workspace_id.to_string(), intent.idempotency_key, document],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_hbar_intent(
+        &self,
+        id: Uuid,
+    ) -> Result<Option<orbit_protocol::HbarTransferIntent>, StoreError> {
+        let document = self
+            .connection
+            .lock()
+            .unwrap()
+            .query_row(
+                "SELECT document FROM hbar_intents WHERE id=?1",
+                params![id.to_string()],
+                |r| r.get::<_, String>(0),
+            )
+            .optional()?;
+        document.map(|d| Ok(serde_json::from_str(&d)?)).transpose()
+    }
+
+    pub fn list_hbar_intents(
+        &self,
+        workspace_id: Uuid,
+    ) -> Result<Vec<orbit_protocol::HbarTransferIntent>, StoreError> {
+        let c = self.connection.lock().unwrap();
+        let mut s =
+            c.prepare("SELECT document FROM hbar_intents WHERE workspace_id=?1 ORDER BY id")?;
+        Ok(
+            s.query_map(params![workspace_id.to_string()], |r| r.get::<_, String>(0))?
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .map(|d| serde_json::from_str(&d))
+                .collect::<Result<_, _>>()?,
+        )
+    }
+
+    pub fn update_hbar_intent(
+        &self,
+        intent: &orbit_protocol::HbarTransferIntent,
+    ) -> Result<(), StoreError> {
+        let changed = self.connection.lock().unwrap().execute(
+            "UPDATE hbar_intents SET document=?2 WHERE id=?1 AND workspace_id=?3",
+            params![
+                intent.id.to_string(),
+                serde_json::to_string(intent)?,
+                intent.workspace_id.to_string()
+            ],
+        )?;
+        if changed != 1 {
+            return Err(StoreError::NotFound);
+        }
+        Ok(())
+    }
+    pub fn cas_hbar_intent_state(
+        &self,
+        intent: &orbit_protocol::HbarTransferIntent,
+        expected: orbit_protocol::HbarTransferState,
+    ) -> Result<bool, StoreError> {
+        let document = serde_json::to_string(intent)?;
+        let changed = self.connection.lock().unwrap().execute(
+            "UPDATE hbar_intents SET document=?2 WHERE id=?1 AND workspace_id=?3 AND json_extract(document, '$.state')=?4",
+            params![intent.id.to_string(), document, intent.workspace_id.to_string(), serde_json::to_string(&expected)?.trim_matches('"')],
+        )?;
+        Ok(changed == 1)
     }
     pub fn list_secrets(&self) -> Result<Vec<SecretMetadata>, StoreError> {
         let c = self.connection.lock().unwrap();
@@ -1039,6 +1198,7 @@ pub enum StoreError {
 mod tests {
     use super::*;
     use orbit_domain::{AgentEventKind, AgentSessionState};
+    use orbit_protocol::{HbarTransferConfig, HbarTransferIntent, HbarTransferState};
 
     #[test]
     fn conversation_round_trip_and_delete() {
@@ -1068,6 +1228,85 @@ mod tests {
         );
         store.delete_conversation(workspace_id).unwrap();
         assert_eq!(store.load_conversation(workspace_id).unwrap(), None);
+    }
+
+    #[test]
+    fn hbar_config_and_intent_survive_store_reopen() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("state.sqlite");
+        let workspace_id = Uuid::new_v4();
+        let intent = HbarTransferIntent {
+            id: Uuid::new_v4(),
+            workspace_id,
+            source_account_id: "0.0.10".into(),
+            recipient_account_id: "0.0.11".into(),
+            amount_tinybar: "10".into(),
+            max_fee_tinybar: "1".into(),
+            network: "mainnet".into(),
+            unsigned_bytes: "AA==".into(),
+            unsigned_digest: "digest".into(),
+            idempotency_key: "once".into(),
+            expires_at_unix_ms: u64::MAX,
+            state: HbarTransferState::Pending,
+            transaction_id: None,
+            approved_digest: None,
+            signed_bytes: None,
+        };
+        let store = WorkspaceStore::open(&path).unwrap();
+        store
+            .save_hedera_config(&HbarTransferConfig {
+                workspace_id,
+                source_account_id: "0.0.10".into(),
+                max_fee_tinybar: "100".into(),
+                node_account_id: "0.0.3".into(),
+            })
+            .unwrap();
+        store.insert_hbar_intent(&intent).unwrap();
+        drop(store);
+        let reopened = WorkspaceStore::open(&path).unwrap();
+        assert_eq!(
+            reopened
+                .get_hedera_config(workspace_id)
+                .unwrap()
+                .unwrap()
+                .source_account_id,
+            "0.0.10"
+        );
+        assert_eq!(
+            reopened.get_hbar_intent(intent.id).unwrap().unwrap(),
+            intent
+        );
+    }
+
+    #[test]
+    fn hbar_idempotency_is_atomic_and_workspace_scoped() {
+        let store = WorkspaceStore::in_memory().unwrap();
+        let first = test_intent(Uuid::new_v4(), Uuid::new_v4(), "same");
+        let second = test_intent(Uuid::new_v4(), first.workspace_id, "same");
+        store.insert_hbar_intent(&first).unwrap();
+        assert!(store.insert_hbar_intent(&second).is_err());
+        let other_workspace = test_intent(Uuid::new_v4(), Uuid::new_v4(), "same");
+        assert!(store.insert_hbar_intent(&other_workspace).is_ok());
+    }
+
+    fn test_intent(id: Uuid, workspace_id: Uuid, key: &str) -> HbarTransferIntent {
+        HbarTransferIntent {
+            id,
+            workspace_id,
+            source_account_id: "0.0.10".into(),
+            recipient_account_id: "0.0.11".into(),
+            amount_tinybar: "1".into(),
+            max_fee_tinybar: "1".into(),
+            network: "mainnet".into(),
+            unsigned_bytes: "AA==".into(),
+            unsigned_digest: "d".into(),
+            idempotency_key: key.into(),
+            expires_at_unix_ms: u64::MAX,
+            state: HbarTransferState::Pending,
+            transaction_id: None,
+            approved_digest: None,
+            signed_bytes: None,
+        }
     }
 
     #[test]
