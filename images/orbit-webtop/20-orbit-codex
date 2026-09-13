@@ -25,6 +25,7 @@ ensure_base_dir /config
 ensure_private_dir /config/.codex
 ensure_private_dir /config/.codex/skills
 ensure_private_dir /config/.codex/skills/orbit-desktop-control
+ensure_private_dir /config/.codex/skills/orbit-crypto-flow
 ensure_private_dir /config/orbit
 ensure_private_dir /config/orbit/captures
 ensure_private_dir /config/.cache
@@ -40,6 +41,17 @@ tmp_path=$(mktemp "$skill_dir/.SKILL.md.tmp.XXXXXX") || fail_closed
 trap 'rm -f "$tmp_path"' EXIT HUP INT TERM
 install -m 0600 -o abc -g abc /opt/orbit/skills/orbit-desktop-control/SKILL.md "$tmp_path" || fail_closed
 mv -fT "$tmp_path" "$skill_path" || fail_closed
+trap - EXIT HUP INT TERM
+
+flow_skill_dir=/config/.codex/skills/orbit-crypto-flow
+flow_skill_path="$flow_skill_dir/SKILL.md"
+if [ -L "$flow_skill_path" ] || { [ -e "$flow_skill_path" ] && [ ! -f "$flow_skill_path" ]; }; then
+  fail_closed
+fi
+tmp_path=$(mktemp "$flow_skill_dir/.SKILL.md.tmp.XXXXXX") || fail_closed
+trap 'rm -f "$tmp_path"' EXIT HUP INT TERM
+install -m 0600 -o abc -g abc /opt/orbit/skills/orbit-crypto-flow/SKILL.md "$tmp_path" || fail_closed
+mv -fT "$tmp_path" "$flow_skill_path" || fail_closed
 trap - EXIT HUP INT TERM
 
 opencode_dir=/config/.config/opencode

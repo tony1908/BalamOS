@@ -37,6 +37,7 @@ ENV SELKIES_IS_MANUAL_RESOLUTION_MODE=true \
 COPY images/orbit-webtop/orbitctl /usr/local/bin/orbitctl
 COPY images/orbit-webtop/orbit-install-apps /usr/local/bin/orbit-install-apps
 COPY images/orbit-webtop/skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
+COPY images/orbit-webtop/skills/orbit-crypto-flow/SKILL.md /opt/orbit/skills/orbit-crypto-flow/SKILL.md
 COPY images/orbit-webtop/opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
 COPY images/orbit-webtop/opencode/opencode.json /opt/orbit/opencode/opencode.json
 COPY images/orbit-webtop/20-orbit-codex /custom-cont-init.d/20-orbit-codex

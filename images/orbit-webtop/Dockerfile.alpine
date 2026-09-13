@@ -4,10 +4,12 @@ FROM lscr.io/linuxserver/webtop:latest
 
 ARG CODEX_VERSION=0.149.1
 ARG OPENCODE_VERSION=1.18.25
+ARG CIRCLE_CLI_VERSION=1.0.0
 
 # apk (musl) instead of apt. Chromium is already in the alpine webtop base.
 RUN apk add --no-cache jq nodejs npm scrot xdotool sudo \
-    && npm install --global "@openai/codex@${CODEX_VERSION}" "opencode-ai@${OPENCODE_VERSION}" \
+    && node -e 'const [major,minor,patch]=process.versions.node.split(".").map(Number); if (major < 20 || (major === 20 && (minor < 18 || (minor === 18 && patch < 2)))) process.exit(1)' \
+    && npm install --global "@openai/codex@${CODEX_VERSION}" "opencode-ai@${OPENCODE_VERSION}" "@circle-fin/cli@${CIRCLE_CLI_VERSION}" \
     && npm cache clean --force
 
 # Pin a fixed, roomy desktop resolution (same Selkies env as the ubuntu image).
@@ -18,14 +20,18 @@ ENV SELKIES_IS_MANUAL_RESOLUTION_MODE=true \
     SELKIES_MANUAL_HEIGHT=900 \
     BROWSER=chromium
 
-COPY orbitctl /usr/local/bin/orbitctl
-COPY skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
-COPY opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
-COPY 20-orbit-codex /custom-cont-init.d/20-orbit-codex
+COPY images/orbit-webtop/orbitctl /usr/local/bin/orbitctl
+COPY images/orbit-webtop/skills/orbit-desktop-control/SKILL.md /opt/orbit/skills/orbit-desktop-control/SKILL.md
+COPY images/orbit-webtop/skills/orbit-crypto-flow/SKILL.md /opt/orbit/skills/orbit-crypto-flow/SKILL.md
+COPY images/orbit-webtop/opencode/AGENTS.md /opt/orbit/opencode/AGENTS.md
+COPY images/orbit-webtop/20-orbit-codex /custom-cont-init.d/20-orbit-codex
+COPY packages/hedera-readonly/package.json /opt/balamos/hedera-src/package.json
+COPY packages/hedera-readonly/src/ /opt/balamos/hedera-src/src/
 RUN chmod 0755 /usr/local/bin/orbitctl \
     /custom-cont-init.d/20-orbit-codex \
     && printf 'abc ALL=(ALL) NOPASSWD:ALL\n' > /etc/sudoers.d/abc \
     && chmod 0440 /etc/sudoers.d/abc \
     && visudo -cf /etc/sudoers.d/abc \
     && codex --version \
-    && opencode --version
+    && opencode --version \
+    && circle --version | grep -F "${CIRCLE_CLI_VERSION}"

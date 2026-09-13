@@ -8,7 +8,7 @@ if [[ -n "${ORBIT_WEBTOP_IMAGE:-}" ]]; then
 else
   source_tag="orbit-webtop:test-$(git rev-parse --short HEAD)"
   printf 'building checked-out image for source-contract test: %s\n' "$source_tag"
-  docker build --tag "$source_tag" images/orbit-webtop
+   docker build --tag "$source_tag" -f images/orbit-webtop/Dockerfile .
   image="$source_tag"
 fi
 config_dir=$(mktemp -d)
@@ -21,13 +21,13 @@ run_hook() {
 
 # Exercise repair of pre-existing private directories owned by root with loose modes.
 docker run --rm --user root --entrypoint /bin/sh -v "$config_dir:/config" "$image" -c \
-  'mkdir -p /config/.codex/skills/orbit-desktop-control /config/orbit/captures /config/.cache /config/.config/opencode &&
-   chmod 755 /config/.codex /config/.codex/skills /config/.codex/skills/orbit-desktop-control /config/orbit /config/orbit/captures /config/.cache /config/.config /config/.config/opencode'
+  'mkdir -p /config/.codex/skills/orbit-desktop-control /config/.codex/skills/orbit-crypto-flow /config/orbit/captures /config/.cache /config/.config/opencode &&
+   chmod 755 /config/.codex /config/.codex/skills /config/.codex/skills/orbit-desktop-control /config/.codex/skills/orbit-crypto-flow /config/orbit /config/orbit/captures /config/.cache /config/.config /config/.config/opencode'
 run_hook
 run_hook
 skill="$config_dir/.codex/skills/orbit-desktop-control/SKILL.md"
 docker run --rm --user root --entrypoint /bin/sh -v "$config_dir:/config" "$image" -c \
-   'for private_dir in /config/.codex /config/.codex/skills /config/.codex/skills/orbit-desktop-control /config/orbit /config/orbit/captures /config/.cache /config/.config /config/.config/opencode; do
+   'for private_dir in /config/.codex /config/.codex/skills /config/.codex/skills/orbit-desktop-control /config/.codex/skills/orbit-crypto-flow /config/orbit /config/orbit/captures /config/.cache /config/.config /config/.config/opencode; do
      test "$(stat -c %a "$private_dir")" = 700 &&
      test "$(stat -c %U:%G "$private_dir")" = abc:abc
    done &&
@@ -35,6 +35,10 @@ docker run --rm --user root --entrypoint /bin/sh -v "$config_dir:/config" "$imag
    test "$(stat -c %a /config/.codex/skills/orbit-desktop-control/SKILL.md)" = 600 &&
    test "$(stat -c %U:%G /config/.codex/skills/orbit-desktop-control/SKILL.md)" = abc:abc &&
     cmp /opt/orbit/skills/orbit-desktop-control/SKILL.md /config/.codex/skills/orbit-desktop-control/SKILL.md &&
+   test -f /config/.codex/skills/orbit-crypto-flow/SKILL.md &&
+   test "$(stat -c %a /config/.codex/skills/orbit-crypto-flow/SKILL.md)" = 600 &&
+   test "$(stat -c %U:%G /config/.codex/skills/orbit-crypto-flow/SKILL.md)" = abc:abc &&
+    cmp /opt/orbit/skills/orbit-crypto-flow/SKILL.md /config/.codex/skills/orbit-crypto-flow/SKILL.md &&
     test -f /config/.config/opencode/AGENTS.md &&
     test "$(stat -c %a /config/.config/opencode/AGENTS.md)" = 600 &&
     test "$(stat -c %U:%G /config/.config/opencode/AGENTS.md)" = abc:abc &&
@@ -42,6 +46,7 @@ docker run --rm --user root --entrypoint /bin/sh -v "$config_dir:/config" "$imag
 
 docker run --rm --user abc --entrypoint /bin/sh -v "$config_dir:/config" "$image" -c \
   'test -r /config/.codex/skills/orbit-desktop-control/SKILL.md &&
+   test -r /config/.codex/skills/orbit-crypto-flow/SKILL.md &&
    test -r /config/.config/opencode/AGENTS.md &&
    touch /config/orbit/captures/.orbit-init-probe &&
    rm /config/orbit/captures/.orbit-init-probe'
